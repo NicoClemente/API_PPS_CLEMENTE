@@ -27,7 +27,13 @@ class Server {
     this.app.use(express.json());
     
     // Middleware de autenticación API_KEY
-    this.app.use('/api', validateApiKey);
+    this.app.use((req, res, next) => {
+      if (req.method === 'OPTIONS') {
+        next();
+      } else {
+        validateApiKey(req, res, next);
+      }
+    });
   }
 
   rutas() {
