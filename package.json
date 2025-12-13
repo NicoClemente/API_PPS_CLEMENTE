@@ -1,0 +1,37 @@
+{
+  "name": "entertainment_api",
+  "version": "2.0.0",
+  "description": "API FlixFinder - Proyecto Final PPS. Backend con base de datos SQLite3 y protección con API_KEY",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "prepare": "husky",
+    "lint": "standard",
+    "lint:fix": "standard --fix"
+  },
+  "keywords": [
+    "api",
+    "movies",
+    "series",
+    "actors",
+    "nodejs",
+    "express",
+    "sqlite"
+  ],
+  "author": "CarlaRacciatti-StefanoMattei-NicolasClemente",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.7.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "husky": "^9.1.6",
+    "nodemon": "^3.0.1",
+    "standard": "^17.1.2"
+  }
+}
