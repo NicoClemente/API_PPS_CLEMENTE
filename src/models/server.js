@@ -12,12 +12,15 @@ class Server {
   }
 
   middleware() {
-    // Headers CORS explícitos (para Cloudflare)
+    // Headers CORS y Cache Control explícitos (para Cloudflare)
     this.app.use((req, res, next) => {
       res.header('Access-Control-Allow-Origin', '*');
       res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
       res.header('Access-Control-Allow-Headers', 'Content-Type, X-API-KEY, Authorization');
       res.header('Access-Control-Max-Age', '86400');
+      res.header('Cache-Control', 'no-cache, no-store, must-revalidate, public');
+      res.header('Pragma', 'no-cache');
+      res.header('Expires', '0');
       next();
     });
 
@@ -35,6 +38,7 @@ class Server {
       res.header('Access-Control-Allow-Origin', '*');
       res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
       res.header('Access-Control-Allow-Headers', 'Content-Type, X-API-KEY, Authorization');
+      res.header('Cache-Control', 'no-cache, no-store, must-revalidate, public');
       res.sendStatus(200);
     });
     
