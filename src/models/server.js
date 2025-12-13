@@ -12,8 +12,16 @@ class Server {
   }
 
   middleware() {
-    // CORS
-    this.app.use(cors());
+    // CORS - CONFIGURACIÓN ACTUALIZADA PARA PERMITIR PETICIONES DESDE FLUTTER WEB
+    this.app.use(cors({
+      origin: '*', // Permitir todas las origins (en producción especificar dominios)
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'X-API-KEY', 'Authorization'],
+      credentials: true
+    }));
+    
+    // Manejar preflight requests
+    this.app.options('*', cors());
     
     // Archivos estáticos
     this.app.use(express.static('public'));
