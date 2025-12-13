@@ -12,13 +12,19 @@ class Server {
   }
 
   middleware() {
-    // CORS - PERMITIR TODAS LAS PETICIONES
+    // CORS - PERMITIR TODAS LAS PETICIONES (ANTES que todo)
     this.app.use(cors({
-      origin: '*',
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      origin: function(origin, callback) {
+        callback(null, true);
+      },
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
       allowedHeaders: ['Content-Type', 'X-API-KEY', 'Authorization'],
-      exposedHeaders: ['X-API-KEY']
+      credentials: false,
+      optionsSuccessStatus: 200
     }));
+
+    // Manejo explícito de preflight OPTIONS
+    this.app.options('*', cors());
     
     // Archivos estáticos
     this.app.use(express.static('public'));
@@ -26,8 +32,8 @@ class Server {
     // Parseo de JSON
     this.app.use(express.json());
     
-    // Middleware de autenticación API_KEY
-    this.app.use((req, res, next) => {
+    // Middleware de autenticación API_KEY (SOLO para rutas /api)
+    this.app.use('/api', (req, res, next) => {
       if (req.method === 'OPTIONS') {
         next();
       } else {
