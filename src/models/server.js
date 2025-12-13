@@ -12,11 +12,18 @@ class Server {
   }
 
   middleware() {
-    // CORS - PERMITIR TODAS LAS PETICIONES (ANTES que todo)
+    // Headers CORS explícitos (para Cloudflare)
+    this.app.use((req, res, next) => {
+      res.header('Access-Control-Allow-Origin', '*');
+      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+      res.header('Access-Control-Allow-Headers', 'Content-Type, X-API-KEY, Authorization');
+      res.header('Access-Control-Max-Age', '86400');
+      next();
+    });
+
+    // CORS - PERMITIR TODAS LAS PETICIONES
     this.app.use(cors({
-      origin: function(origin, callback) {
-        callback(null, true);
-      },
+      origin: '*',
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
       allowedHeaders: ['Content-Type', 'X-API-KEY', 'Authorization'],
       credentials: false,
@@ -24,7 +31,12 @@ class Server {
     }));
 
     // Manejo explícito de preflight OPTIONS
-    this.app.options('*', cors());
+    this.app.options('*', (req, res) => {
+      res.header('Access-Control-Allow-Origin', '*');
+      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+      res.header('Access-Control-Allow-Headers', 'Content-Type, X-API-KEY, Authorization');
+      res.sendStatus(200);
+    });
     
     // Archivos estáticos
     this.app.use(express.static('public'));
