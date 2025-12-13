@@ -12,16 +12,13 @@ class Server {
   }
 
   middleware() {
-    // CORS - CONFIGURACIÓN ACTUALIZADA PARA PERMITIR PETICIONES DESDE FLUTTER WEB
+    // CORS - PERMITIR TODAS LAS PETICIONES
     this.app.use(cors({
-      origin: '*', // Permitir todas las origins (en producción especificar dominios)
+      origin: '*',
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'X-API-KEY', 'Authorization'],
-      credentials: true
+      exposedHeaders: ['X-API-KEY']
     }));
-    
-    // Manejar preflight requests
-    this.app.options('*', cors());
     
     // Archivos estáticos
     this.app.use(express.static('public'));
@@ -29,38 +26,30 @@ class Server {
     // Parseo de JSON
     this.app.use(express.json());
     
-    // Middleware de autenticación API_KEY (protege TODAS las rutas de la API)
+    // Middleware de autenticación API_KEY
     this.app.use('/api', validateApiKey);
   }
 
   rutas() {
-    // ============================================
-    // RUTAS CRUD CON BASE DE DATOS
-    // ============================================
-    
-    // Películas (incluye CRUD + API externa)
+    // Películas
     this.app.use('/api/v1/peliculas', require('../routes/movies'));
     
-    // Series (incluye CRUD + API externa)
+    // Series
     this.app.use('/api/v1/series', require('../routes/series'));
     
-    // Actores (incluye CRUD + API externa)
+    // Actores
     this.app.use('/api/v1/actores', require('../routes/actors'));
     
-    // Libros (solo API externa - opcional para el proyecto)
+    // Libros
     this.app.use('/api/v1/libros', require('../routes/books'));
     
-    // Usuarios (nuevo)
+    // Usuarios
     this.app.use('/api/v1/users', require('../routes/users'));
     
-    // Favoritos (nuevo)
+    // Favoritos
     this.app.use('/api/v1/favorites', require('../routes/favorites'));
 
-    // ============================================
-    // MANEJO DE ERRORES
-    // ============================================
-    
-    // Ruta raíz - información de la API
+    // Ruta raíz
     this.app.get('/', (req, res) => {
       res.json({
         msg: 'FlixFinder API v2.0 - Proyecto Final PPS',
@@ -72,24 +61,16 @@ class Server {
           usuarios: '/api/v1/users',
           favoritos: '/api/v1/favorites'
         },
-        auth: 'Todas las rutas /api requieren header X-API-KEY o query param api_key',
-        docs: 'Ver README.md para documentación completa'
+        auth: 'Todas las rutas /api requieren header X-API-KEY',
+        docs: 'Ver README.md'
       });
     });
     
-    // Rutas no encontradas
+    // 404
     this.app.use('*', (req, res) => {
       res.status(404).json({
         msg: 'Error',
-        error: 'Ruta no encontrada',
-        availableRoutes: [
-          '/api/v1/peliculas',
-          '/api/v1/series',
-          '/api/v1/actores',
-          '/api/v1/libros',
-          '/api/v1/users',
-          '/api/v1/favorites'
-        ]
+        error: 'Ruta no encontrada'
       });
     });
   }
@@ -105,7 +86,6 @@ class Server {
       console.log('================================================');
     });
     
-    // Manejo de cierre graceful
     process.on('SIGINT', () => {
       console.log('\n🛑 Cerrando servidor...');
       db.close()
@@ -114,7 +94,7 @@ class Server {
           process.exit(0);
         })
         .catch((err) => {
-          console.error('❌ Error al cerrar la base de datos:', err);
+          console.error('❌ Error al cerrar:', err);
           process.exit(1);
         });
     });
