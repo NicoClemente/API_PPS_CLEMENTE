@@ -14,8 +14,9 @@ class Server {
   }
 
   middleware() {
-    console.log('🌐 CORS habilitado para todos los orígenes');    
+    console.log('🌐 CORS habilitado para todos los orígenes');
     
+    // ===== PASO 1: Headers CORS MANUALES (CRÍTICO - DEBE IR PRIMERO) =====
     this.app.use((req, res, next) => {
       // Headers CORS explícitos
       res.setHeader('Access-Control-Allow-Origin', '*');
@@ -24,13 +25,13 @@ class Server {
       res.setHeader('Access-Control-Expose-Headers', 'Content-Length, X-API-KEY');
       res.setHeader('Access-Control-Max-Age', '86400');
       
-      // Anti-cache headers 
+      // Anti-cache headers (importante para proxies como Render/Cloudflare)
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
       res.setHeader('Surrogate-Control', 'no-store');
       
-      // Responder inmediatamente a preflight OPTIONS
+      // CRÍTICO: Responder inmediatamente a preflight OPTIONS sin validar API_KEY
       if (req.method === 'OPTIONS') {
         console.log(`✅ OPTIONS ${req.path} - Preflight OK`);
         return res.status(200).end();
@@ -38,7 +39,8 @@ class Server {
       
       next();
     });
-   
+
+    // ===== PASO 2: Middleware de CORS de Express (redundancia por seguridad) =====
     this.app.use(cors({
       origin: '*',
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
@@ -47,9 +49,11 @@ class Server {
       credentials: false,
       maxAge: 86400
     }));
-  
+
+    // ===== PASO 3: Parse JSON =====
     this.app.use(express.json());
 
+    // ===== PASO 4: Logger =====
     this.app.use((req, res, next) => {
       console.log(`📥 ${req.method} ${req.path}`);
       next();
@@ -57,6 +61,7 @@ class Server {
   }
 
   routes() {
+    // Ruta de salud
     this.app.get('/', (req, res) => {
       res.json({
         success: true,
@@ -72,11 +77,14 @@ class Server {
       });
     });
 
+    // ===== Middleware de validación de API_KEY (SOLO para rutas /api) =====
     this.app.use('/api', (req, res, next) => {
+      // CRÍTICO: Permitir OPTIONS sin validar API_KEY (ya se manejó arriba pero por seguridad)
       if (req.method === 'OPTIONS') {
         return next();
       }
       
+      // Validar API_KEY para otros métodos
       const apiKey = req.headers['x-api-key'];
       const validApiKey = process.env.API_KEY;
       
@@ -100,14 +108,14 @@ class Server {
       next();
     });
 
-    // Rutas de la API
+    // ===== Rutas de la API =====
     this.app.use('/api/v1/peliculas', require('../routes/peliculasRoutes'));
     this.app.use('/api/v1/series', require('../routes/seriesRoutes'));
     this.app.use('/api/v1/actores', require('../routes/actoresRoutes'));
     this.app.use('/api/v1/favorites', require('../routes/favoritesRoutes'));
     this.app.use('/api/v1/users', require('../routes/usersRoutes'));
 
-    // Ruta 404
+    // ===== Ruta 404 =====
     this.app.use((req, res) => {
       res.status(404).json({
         success: false,
