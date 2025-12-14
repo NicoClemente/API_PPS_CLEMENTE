@@ -1,130 +1,127 @@
 const express = require('express');
 const cors = require('cors');
-const { validateApiKey } = require('../middlewares/auth');
-const db = require('../config/database');
 
 class Server {
   constructor() {
     this.app = express();
     this.port = process.env.PORT || 3000;
+
+    // Middleware
     this.middleware();
-    this.rutas();
+
+    // Rutas
+    this.routes();
   }
 
   middleware() {
-    // Headers CORS y Cache Control explícitos (para Cloudflare)
+    console.log('🌐 CORS habilitado para todos los orígenes');    
+    
     this.app.use((req, res, next) => {
-      res.header('Access-Control-Allow-Origin', '*');
-      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-      res.header('Access-Control-Allow-Headers', 'Content-Type, X-API-KEY, Authorization');
-      res.header('Access-Control-Max-Age', '86400');
-      res.header('Cache-Control', 'no-cache, no-store, must-revalidate, public');
-      res.header('Pragma', 'no-cache');
-      res.header('Expires', '0');
+      // Headers CORS explícitos
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD');
+      res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, X-API-KEY, Authorization');
+      res.setHeader('Access-Control-Expose-Headers', 'Content-Length, X-API-KEY');
+      res.setHeader('Access-Control-Max-Age', '86400');
+      
+      // Anti-cache headers 
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('Surrogate-Control', 'no-store');
+      
+      // Responder inmediatamente a preflight OPTIONS
+      if (req.method === 'OPTIONS') {
+        console.log(`✅ OPTIONS ${req.path} - Preflight OK`);
+        return res.status(200).end();
+      }
+      
       next();
     });
-
-    // CORS - PERMITIR TODAS LAS PETICIONES
+   
     this.app.use(cors({
       origin: '*',
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-      allowedHeaders: ['Content-Type', 'X-API-KEY', 'Authorization'],
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
+      allowedHeaders: ['Content-Type', 'X-API-KEY', 'Authorization', 'Origin', 'X-Requested-With', 'Accept'],
+      exposedHeaders: ['Content-Length', 'X-API-KEY'],
       credentials: false,
-      optionsSuccessStatus: 200
+      maxAge: 86400
     }));
-
-    // Manejo explícito de preflight OPTIONS
-    this.app.options('*', (req, res) => {
-      res.header('Access-Control-Allow-Origin', '*');
-      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-      res.header('Access-Control-Allow-Headers', 'Content-Type, X-API-KEY, Authorization');
-      res.header('Cache-Control', 'no-cache, no-store, must-revalidate, public');
-      res.sendStatus(200);
-    });
-    
-    // Archivos estáticos
-    this.app.use(express.static('public'));
-    
-    // Parseo de JSON
+  
     this.app.use(express.json());
-    
-    // Middleware de autenticación API_KEY (SOLO para rutas /api)
-    this.app.use('/api', (req, res, next) => {
-      if (req.method === 'OPTIONS') {
-        next();
-      } else {
-        validateApiKey(req, res, next);
-      }
+
+    this.app.use((req, res, next) => {
+      console.log(`📥 ${req.method} ${req.path}`);
+      next();
     });
   }
 
-  rutas() {
-    // Películas
-    this.app.use('/api/v1/peliculas', require('../routes/movies'));
-    
-    // Series
-    this.app.use('/api/v1/series', require('../routes/series'));
-    
-    // Actores
-    this.app.use('/api/v1/actores', require('../routes/actors'));
-    
-    // Libros
-    this.app.use('/api/v1/libros', require('../routes/books'));
-    
-    // Usuarios
-    this.app.use('/api/v1/users', require('../routes/users'));
-    
-    // Favoritos
-    this.app.use('/api/v1/favorites', require('../routes/favorites'));
-
-    // Ruta raíz
+  routes() {
     this.app.get('/', (req, res) => {
       res.json({
-        msg: 'FlixFinder API v2.0 - Proyecto Final PPS',
+        success: true,
+        message: 'FlixFinder API - PPS Clemente',
+        version: '1.0.0',
         endpoints: {
           peliculas: '/api/v1/peliculas',
           series: '/api/v1/series',
           actores: '/api/v1/actores',
-          libros: '/api/v1/libros',
-          usuarios: '/api/v1/users',
-          favoritos: '/api/v1/favorites'
-        },
-        auth: 'Todas las rutas /api requieren header X-API-KEY',
-        docs: 'Ver README.md'
+          favorites: '/api/v1/favorites',
+          users: '/api/v1/users'
+        }
       });
     });
-    
-    // 404
-    this.app.use('*', (req, res) => {
+
+    this.app.use('/api', (req, res, next) => {
+      if (req.method === 'OPTIONS') {
+        return next();
+      }
+      
+      const apiKey = req.headers['x-api-key'];
+      const validApiKey = process.env.API_KEY;
+      
+      if (!apiKey) {
+        console.log('❌ API_KEY faltante');
+        return res.status(401).json({
+          success: false,
+          error: 'API_KEY requerida en header X-API-KEY'
+        });
+      }
+      
+      if (apiKey !== validApiKey) {
+        console.log('❌ API_KEY inválida:', apiKey);
+        return res.status(401).json({
+          success: false,
+          error: 'API_KEY inválida'
+        });
+      }
+      
+      console.log('✅ API_KEY válida');
+      next();
+    });
+
+    // Rutas de la API
+    this.app.use('/api/v1/peliculas', require('../routes/peliculasRoutes'));
+    this.app.use('/api/v1/series', require('../routes/seriesRoutes'));
+    this.app.use('/api/v1/actores', require('../routes/actoresRoutes'));
+    this.app.use('/api/v1/favorites', require('../routes/favoritesRoutes'));
+    this.app.use('/api/v1/users', require('../routes/usersRoutes'));
+
+    // Ruta 404
+    this.app.use((req, res) => {
       res.status(404).json({
-        msg: 'Error',
-        error: 'Ruta no encontrada'
+        success: false,
+        error: 'Endpoint no encontrado'
       });
     });
   }
 
   listen() {
     this.app.listen(this.port, () => {
-      console.log('================================================');
-      console.log('🚀 FlixFinder API - Proyecto Final PPS');
-      console.log('================================================');
-      console.log(`✅ Servidor corriendo en puerto ${this.port}`);
-      console.log(`🔗 http://localhost:${this.port}`);
-      console.log(`🔐 API_KEY requerida para todas las rutas /api`);
-      console.log('================================================');
-    });
-    
-    process.on('SIGINT', () => {
-      console.log('\n🛑 Cerrando servidor...');
-      db.close()
-        .then(() => {
-          console.log('✅ Base de datos cerrada');
-          process.exit(0);
-        })
-        .catch((err) => {
-          console.error('❌ Error al cerrar:', err);
-          process.exit(1);
-        });
+      console.log('🚀 ====================================');
+      console.log(`🚀 Servidor corriendo en puerto ${this.port}`);
+      console.log(`🚀 Entorno: ${process.env.NODE_ENV || 'development'}`);
+      console.log('🚀 ====================================');
     });
   }
 }
