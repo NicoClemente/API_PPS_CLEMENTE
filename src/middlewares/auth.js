@@ -8,7 +8,7 @@ const validateApiKey = (req, res, next) => {
   const apiKey = req.header('X-API-KEY') || req.query.api_key;
   
   // API_KEY esperada (en producción debería estar en .env)
-  const validApiKey = process.env.API_KEY || 'flixfinder_api_key_2024';
+  const validApiKey = process.env.API_KEY;
 
   // Validar que existe
   if (!apiKey) {
