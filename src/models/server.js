@@ -34,18 +34,15 @@ class Server {
       next();
     });
 
-    // CORS adicional con express-cors
     this.app.use(cors({
       origin: true,
       credentials: true,
       optionsSuccessStatus: 204
     }));
 
-    // Body parsers
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
 
-    // Logger
     this.app.use((req, res, next) => {
       console.log(`📥 ${req.method} ${req.path} - Origin: ${req.headers.origin || 'none'}`);
       next();
@@ -108,7 +105,6 @@ class Server {
       next();
     });
 
-    // ===== Rutas de la API =====
     this.app.use('/api/v1/peliculas', require('../routes/movies'));
     this.app.use('/api/v1/series', require('../routes/series'));
     this.app.use('/api/v1/actores', require('../routes/actors'));
@@ -132,6 +128,7 @@ class Server {
       console.log(`🚀 Servidor corriendo en puerto ${this.port}`);
       console.log(`🚀 Entorno: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🚀 CORS habilitado para Flutter Web`);
+      console.log(`🚀 API_KEY: ${process.env.API_KEY ? 'ACTIVADA ✅' : 'NO CONFIGURADA ❌'}`);
       console.log('🚀 ====================================');
     });
   }
