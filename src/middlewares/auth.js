@@ -1,35 +1,81 @@
+const jwt = require('jsonwebtoken');
+
 /**
- * Middleware de Autenticación con API_KEY
- * Protege todas las rutas de la API
+ * Middleware para verificar el token JWT
+ * Extrae el token del header Authorization y verifica su validez
  */
+const authMiddleware = async (req, res, next) => {
+  try {
+    // Obtener token del header Authorization
+    const authHeader = req.headers.authorization;
 
-const validateApiKey = (req, res, next) => {
-  // Obtener API_KEY del header
-  const apiKey = req.header('X-API-KEY') || req.query.api_key;
-  
-  // API_KEY esperada (en producción debería estar en .env)
-  const validApiKey = process.env.API_KEY;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        msg: 'Token no proporcionado. Use: Authorization: Bearer <token>'
+      });
+    }
 
-  // Validar que existe
-  if (!apiKey) {
-    return res.status(401).json({
-      msg: 'Error',
-      error: 'API_KEY requerida. Incluya el header X-API-KEY o el query param api_key'
+    // Extraer el token (después de "Bearer ")
+    const token = authHeader.substring(7);
+
+    // Verificar el token con la clave secreta
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Agregar información del usuario a la request
+    // Ahora cualquier ruta puede acceder a req.user
+    req.user = decoded;
+
+    console.log(`✅ Usuario autenticado: ${decoded.email} (ID: ${decoded.id})`);
+
+    next();
+  } catch (error) {
+    console.error('❌ Error en auth middleware:', error.message);
+
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({
+        success: false,
+        msg: 'Token inválido'
+      });
+    }
+
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        msg: 'Token expirado. Por favor inicie sesión nuevamente'
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      msg: 'Error al verificar token',
+      error: error.message
     });
   }
+};
 
-  // Validar que es correcta
-  if (apiKey !== validApiKey) {
-    return res.status(403).json({
-      msg: 'Error',
-      error: 'API_KEY inválida'
-    });
+const optionalAuth = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = decoded;
+      console.log(`✅ Usuario autenticado (opcional): ${decoded.email}`);
+    } else {
+      console.log('ℹ️  Request sin autenticación (permitido)');
+    }
+
+    next();
+  } catch (error) {
+    // Si hay error, simplemente continuar sin autenticar
+    console.log('ℹ️  Token inválido o expirado (ignorado en ruta opcional)');
+    next();
   }
-
-  // Si todo está bien, continuar
-  next();
 };
 
 module.exports = {
-  validateApiKey
+  authMiddleware,
+  optionalAuth
 };
