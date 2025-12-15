@@ -14,48 +14,41 @@ class Server {
   }
 
   middleware() {
-    console.log('🌐 CORS habilitado para todos los orígenes');
+    console.log('🌐 CORS habilitado para Flutter Web');
     
-    // ===== PASO 1: Headers CORS MANUALES (CRÍTICO - DEBE IR PRIMERO) =====
     this.app.use((req, res, next) => {
-      // Headers CORS explícitos
-      res.setHeader('Access-Control-Allow-Origin', '*');
+      const origin = req.headers.origin;
+      
+      res.setHeader('Access-Control-Allow-Origin', origin || '*');
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD');
-      res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, X-API-KEY, Authorization');
+      res.setHeader('Access-Control-Allow-Headers', 
+        'Origin, X-Requested-With, Content-Type, Accept, X-API-KEY, Authorization, Cache-Control, Pragma'
+      );
       res.setHeader('Access-Control-Expose-Headers', 'Content-Length, X-API-KEY');
       res.setHeader('Access-Control-Max-Age', '86400');
       
-      // Anti-cache headers (importante para proxies como Render/Cloudflare)
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-      res.setHeader('Surrogate-Control', 'no-store');
-      
-      // CRÍTICO: Responder inmediatamente a preflight OPTIONS sin validar API_KEY
       if (req.method === 'OPTIONS') {
-        console.log(`✅ OPTIONS ${req.path} - Preflight OK`);
-        return res.status(200).end();
+        console.log(`✅ PREFLIGHT ${req.path} from ${origin}`);
+        return res.status(204).end();
       }
       
       next();
     });
 
-    // ===== PASO 2: Middleware de CORS de Express (redundancia por seguridad) =====
     this.app.use(cors({
-      origin: '*',
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
-      allowedHeaders: ['Content-Type', 'X-API-KEY', 'Authorization', 'Origin', 'X-Requested-With', 'Accept'],
-      exposedHeaders: ['Content-Length', 'X-API-KEY'],
-      credentials: false,
-      maxAge: 86400
+      origin: true,
+      credentials: true,
+      optionsSuccessStatus: 204
     }));
 
-    // ===== PASO 3: Parse JSON =====
+    // Parse JSON
     this.app.use(express.json());
+    this.app.use(express.urlencoded({ extended: true }));
 
-    // ===== PASO 4: Logger =====
+    // Logger
     this.app.use((req, res, next) => {
-      console.log(`📥 ${req.method} ${req.path}`);
+      console.log(`📥 ${req.method} ${req.path} - Origin: ${req.headers.origin || 'none'}`);
       next();
     });
   }
@@ -79,7 +72,7 @@ class Server {
 
     // ===== Middleware de validación de API_KEY (SOLO para rutas /api) =====
     this.app.use('/api', (req, res, next) => {
-      // CRÍTICO: Permitir OPTIONS sin validar API_KEY (ya se manejó arriba pero por seguridad)
+      // CRÍTICO: Permitir OPTIONS sin validar API_KEY
       if (req.method === 'OPTIONS') {
         return next();
       }
@@ -109,11 +102,11 @@ class Server {
     });
 
     // ===== Rutas de la API =====
-    this.app.use('/api/v1/peliculas', require('../routes/peliculasRoutes'));
-    this.app.use('/api/v1/series', require('../routes/seriesRoutes'));
-    this.app.use('/api/v1/actores', require('../routes/actoresRoutes'));
-    this.app.use('/api/v1/favorites', require('../routes/favoritesRoutes'));
-    this.app.use('/api/v1/users', require('../routes/usersRoutes'));
+    this.app.use('/api/v1/peliculas', require('../routes/movies'));
+    this.app.use('/api/v1/series', require('../routes/series'));
+    this.app.use('/api/v1/actores', require('../routes/actors'));
+    this.app.use('/api/v1/favorites', require('../routes/favorites'));
+    this.app.use('/api/v1/users', require('../routes/users'));
 
     // ===== Ruta 404 =====
     this.app.use((req, res) => {
