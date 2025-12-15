@@ -6,19 +6,17 @@ class Server {
     this.app = express();
     this.port = process.env.PORT || 3000;
 
-    // Middleware
     this.middleware();
-
-    // Rutas
     this.routes();
   }
 
   middleware() {
-    console.log('🌐 CORS habilitado para Flutter Web');
+    console.log('🌐 Configurando CORS para Flutter Web');
     
     this.app.use((req, res, next) => {
       const origin = req.headers.origin;
       
+      // Headers CORS
       res.setHeader('Access-Control-Allow-Origin', origin || '*');
       res.setHeader('Access-Control-Allow-Credentials', 'true');
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD');
@@ -29,20 +27,21 @@ class Server {
       res.setHeader('Access-Control-Max-Age', '86400');
       
       if (req.method === 'OPTIONS') {
-        console.log(`✅ PREFLIGHT ${req.path} from ${origin}`);
+        console.log(`✅ PREFLIGHT ${req.path} from ${origin || 'unknown'}`);
         return res.status(204).end();
       }
       
       next();
     });
 
+    // CORS adicional con express-cors
     this.app.use(cors({
       origin: true,
       credentials: true,
       optionsSuccessStatus: 204
     }));
 
-    // Parse JSON
+    // Body parsers
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
 
@@ -54,12 +53,14 @@ class Server {
   }
 
   routes() {
-    // Ruta de salud
     this.app.get('/', (req, res) => {
+      console.log('✅ GET / - Ruta raíz accedida');
       res.json({
         success: true,
         message: 'FlixFinder API - PPS Clemente',
-        version: '1.0.0',
+        version: '2.0.0',
+        status: 'online',
+        timestamp: new Date().toISOString(),
         endpoints: {
           peliculas: '/api/v1/peliculas',
           series: '/api/v1/series',
@@ -70,16 +71,22 @@ class Server {
       });
     });
 
-    // ===== Middleware de validación de API_KEY (SOLO para rutas /api) =====
+    this.app.get('/health', (req, res) => {
+      res.json({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString() 
+      });
+    });
+
     this.app.use('/api', (req, res, next) => {
-      // CRÍTICO: Permitir OPTIONS sin validar API_KEY
       if (req.method === 'OPTIONS') {
         return next();
       }
       
-      // Validar API_KEY para otros métodos
       const apiKey = req.headers['x-api-key'];
       const validApiKey = process.env.API_KEY;
+      
+      console.log(`🔑 Validando API_KEY para ${req.path}`);
       
       if (!apiKey) {
         console.log('❌ API_KEY faltante');
@@ -90,7 +97,7 @@ class Server {
       }
       
       if (apiKey !== validApiKey) {
-        console.log('❌ API_KEY inválida:', apiKey);
+        console.log('❌ API_KEY inválida');
         return res.status(401).json({
           success: false,
           error: 'API_KEY inválida'
@@ -108,11 +115,13 @@ class Server {
     this.app.use('/api/v1/favorites', require('../routes/favorites'));
     this.app.use('/api/v1/users', require('../routes/users'));
 
-    // ===== Ruta 404 =====
     this.app.use((req, res) => {
+      console.log(`❌ 404 - Ruta no encontrada: ${req.method} ${req.path}`);
       res.status(404).json({
         success: false,
-        error: 'Endpoint no encontrado'
+        error: 'Endpoint no encontrado',
+        path: req.path,
+        method: req.method
       });
     });
   }
@@ -122,6 +131,7 @@ class Server {
       console.log('🚀 ====================================');
       console.log(`🚀 Servidor corriendo en puerto ${this.port}`);
       console.log(`🚀 Entorno: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🚀 CORS habilitado para Flutter Web`);
       console.log('🚀 ====================================');
     });
   }
