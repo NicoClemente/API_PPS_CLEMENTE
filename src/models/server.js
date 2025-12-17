@@ -70,7 +70,7 @@ class Server {
       res.json({
         success: true,
         message: 'FlixFinder API - PPS Clemente',
-        version: '3.0.0',
+        version: '3.1.0',
         database: 'PostgreSQL (Neon v17)',
         status: 'online',
         timestamp: new Date().toISOString(),
@@ -90,7 +90,8 @@ class Server {
             'GET /api/v1/series': 'Series (requiere API_KEY)',
             'GET /api/v1/actores': 'Actores (requiere API_KEY)',
             'GET /api/v1/users': 'Usuarios (requiere API_KEY)',
-            'GET /api/v1/favorites': 'Favoritos (requiere API_KEY + JWT)'
+            'GET /api/v1/favorites': 'Favoritos (requiere API_KEY + JWT)',
+            'POST /api/v1/reviews': 'Reviews (requiere API_KEY + JWT)'
           }
         }
       });
@@ -143,6 +144,7 @@ class Server {
     this.app.use('/api/v1/actores', require('../routes/actors'));
     this.app.use('/api/v1/users', require('../routes/users'));
     this.app.use('/api/v1/favorites', require('../routes/favorites'));
+    this.app.use('/api/v1/reviews', require('../routes/reviews'));
 
     // 404
     this.app.use((req, res) => {
@@ -165,6 +167,7 @@ class Server {
       console.log('🚀 CORS habilitado para Flutter Web');
       console.log('🚀 API_KEY: ACTIVADA ✅');
       console.log('🚀 JWT Auth: ACTIVADA ✅');
+      console.log('🚀 Reviews: ACTIVADAS ✅');
       console.log('🚀 ====================================');
     });
   }

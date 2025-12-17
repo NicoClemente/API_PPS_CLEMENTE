@@ -6,9 +6,8 @@ const pool = require('../config/database');
 exports.addFavorite = async (req, res) => {
   try {
     const { item_type, item_id, tmdb_id } = req.body;
-    const user_id = req.user.id; // Del middleware de autenticación
+    const user_id = req.user.id;
 
-    // Validar datos
     if (!item_type || !item_id) {
       return res.status(400).json({
         success: false,
@@ -16,7 +15,6 @@ exports.addFavorite = async (req, res) => {
       });
     }
 
-    // Validar item_type
     const validTypes = ['movie', 'series', 'actor'];
     if (!validTypes.includes(item_type)) {
       return res.status(400).json({
@@ -25,7 +23,6 @@ exports.addFavorite = async (req, res) => {
       });
     }
 
-    // Insertar favorito
     const query = `
       INSERT INTO favorites (user_id, item_type, item_id, tmdb_id)
       VALUES ($1, $2, $3, $4)
@@ -65,7 +62,7 @@ exports.addFavorite = async (req, res) => {
 exports.getUserFavorites = async (req, res) => {
   try {
     const user_id = req.user.id;
-    const { type } = req.query; // Filtrar por tipo (opcional)
+    const { type } = req.query;
 
     let query = 'SELECT * FROM favorites WHERE user_id = $1';
     const params = [user_id];
@@ -95,53 +92,76 @@ exports.getUserFavorites = async (req, res) => {
 };
 
 /**
- * Obtener favoritos con detalles completos (para la pantalla de favoritos)
- * Este endpoint devuelve los favoritos con los detalles del item desde las tablas movies/series/actors
+ * Obtener favoritos con detalles completos (SIMPLIFICADO)
  */
 exports.getUserFavoritesDetailed = async (req, res) => {
   try {
     const user_id = req.user.id;
 
-    const query = `
-      SELECT 
-        f.id,
-        f.user_id,
-        f.item_type,
-        f.item_id,
-        f.tmdb_id,
-        f.created_at,
-        CASE 
-          WHEN f.item_type = 'movie' THEN json_build_object(
-            'title', m.title,
-            'poster_path', m.poster_path,
-            'release_date', m.release_date,
-            'vote_average', m.vote_average
-          )
-          WHEN f.item_type = 'series' THEN json_build_object(
-            'name', s.name,
-            'poster_path', s.image_url,
-            'first_air_date', s.premiered,
-            'vote_average', s.rating
-          )
-          WHEN f.item_type = 'actor' THEN json_build_object(
-            'name', a.name,
-            'profile_path', a.profile_path,
-            'known_for_department', a.known_for_department
-          )
-        END as details
-      FROM favorites f
-      LEFT JOIN movies m ON f.item_type = 'movie' AND f.tmdb_id = m.tmdb_id
-      LEFT JOIN series s ON f.item_type = 'series' AND f.tmdb_id = s.tmdb_id
-      LEFT JOIN actors a ON f.item_type = 'actor' AND f.tmdb_id = a.tmdb_id
-      WHERE f.user_id = $1
-      ORDER BY f.created_at DESC
+    // Primero obtenemos los favoritos básicos
+    const favoritesQuery = `
+      SELECT * FROM favorites 
+      WHERE user_id = $1 
+      ORDER BY created_at DESC
     `;
-
-    const result = await pool.query(query, [user_id]);
+    
+    const favoritesResult = await pool.query(favoritesQuery, [user_id]);
+    
+    // Para cada favorito, obtenemos los detalles según su tipo
+    const favoritesWithDetails = await Promise.all(
+      favoritesResult.rows.map(async (fav) => {
+        let details = null;
+        
+        try {
+          if (fav.item_type === 'movie') {
+            const movieQuery = `
+              SELECT title, poster_path, release_date, vote_average 
+              FROM movies 
+              WHERE tmdb_id = $1 
+              LIMIT 1
+            `;
+            const movieResult = await pool.query(movieQuery, [fav.tmdb_id]);
+            details = movieResult.rows[0] || null;
+          } 
+          else if (fav.item_type === 'series') {
+            const seriesQuery = `
+              SELECT name, image_url as poster_path, premiered as first_air_date 
+              FROM series 
+              WHERE tmdb_id = $1 
+              LIMIT 1
+            `;
+            const seriesResult = await pool.query(seriesQuery, [fav.tmdb_id]);
+            if (seriesResult.rows[0]) {
+              details = {
+                ...seriesResult.rows[0],
+                vote_average: 8.0
+              };
+            }
+          }
+          else if (fav.item_type === 'actor') {
+            const actorQuery = `
+              SELECT name, profile_path, known_for_department 
+              FROM actors 
+              WHERE tmdb_id = $1 
+              LIMIT 1
+            `;
+            const actorResult = await pool.query(actorQuery, [fav.tmdb_id]);
+            details = actorResult.rows[0] || null;
+          }
+        } catch (err) {
+          console.error(`Error obteniendo detalles para ${fav.item_type}:`, err);
+        }
+        
+        return {
+          ...fav,
+          details
+        };
+      })
+    );
 
     res.json({
       success: true,
-      data: result.rows
+      data: favoritesWithDetails
     });
 
   } catch (error) {
@@ -201,7 +221,6 @@ exports.toggleFavorite = async (req, res) => {
     const { item_type, item_id, tmdb_id } = req.body;
     const user_id = req.user.id;
 
-    // Validar datos
     if (!item_type || !item_id) {
       return res.status(400).json({
         success: false,
@@ -268,11 +287,9 @@ exports.deleteFavorite = async (req, res) => {
     let query, params;
 
     if (id) {
-      // Eliminar por ID del favorito
       query = 'DELETE FROM favorites WHERE id = $1 AND user_id = $2 RETURNING *';
       params = [id, user_id];
     } else if (item_type && item_id) {
-      // Eliminar por tipo e ID del item
       query = 'DELETE FROM favorites WHERE user_id = $1 AND item_type = $2 AND item_id = $3 RETURNING *';
       params = [user_id, item_type, item_id];
     } else {
@@ -301,41 +318,6 @@ exports.deleteFavorite = async (req, res) => {
     res.status(500).json({
       success: false,
       msg: 'Error al eliminar favorito',
-      error: error.message
-    });
-  }
-};
-
-/**
- * Obtener favoritos por tipo (usado en Flutter)
- */
-exports.getUserFavoritesByType = async (req, res) => {
-  try {
-    const user_id = req.user.id;
-    const { type } = req.query;
-
-    let query = 'SELECT * FROM favorites WHERE user_id = $1';
-    const params = [user_id];
-
-    if (type && type !== 'all') {
-      query += ' AND item_type = $2';
-      params.push(type);
-    }
-
-    query += ' ORDER BY created_at DESC';
-
-    const result = await pool.query(query, params);
-
-    res.json({
-      success: true,
-      data: result.rows
-    });
-
-  } catch (error) {
-    console.error('❌ Error en getUserFavoritesByType:', error);
-    res.status(500).json({
-      success: false,
-      msg: 'Error al obtener favoritos por tipo',
       error: error.message
     });
   }
