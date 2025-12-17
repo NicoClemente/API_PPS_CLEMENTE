@@ -4,28 +4,43 @@ const { authMiddleware } = require('../middleware/auth');
 const favoritesController = require('../controllers/favoritesController');
 
 // =====================================
-// TODAS LAS RUTAS REQUIEREN AUTENTICACIÓN
+// RUTAS PROTEGIDAS (requieren JWT)
 // =====================================
 
-// Agregar favorito
+/**
+ * Agregar un favorito
+ * POST /api/v1/favorites
+ */
 router.post('/', authMiddleware, favoritesController.addFavorite);
 
-// Obtener todos los favoritos del usuario
-router.get('/', authMiddleware, favoritesController.getUserFavorites);
-
-// Obtener favoritos con detalles completos (para la pantalla de favoritos)
-router.get('/detailed', authMiddleware, favoritesController.getUserFavoritesDetailed);
-
-// Verificar si un item es favorito
-router.get('/check', authMiddleware, favoritesController.checkFavorite);
-
-// Toggle favorito (agregar o eliminar)
+/**
+ * Toggle favorito (agregar o eliminar)
+ * POST /api/v1/favorites/toggle
+ */
 router.post('/toggle', authMiddleware, favoritesController.toggleFavorite);
 
-// Eliminar favorito
-router.delete('/', authMiddleware, favoritesController.deleteFavorite);
+/**
+ * Obtener favoritos del usuario
+ * GET /api/v1/favorites
+ */
+router.get('/', authMiddleware, favoritesController.getUserFavorites);
 
-// Obtener favoritos por tipo
-router.get('/user/:userId', authMiddleware, favoritesController.getUserFavoritesByType);
+/**
+ * Obtener favoritos con detalles completos
+ * GET /api/v1/favorites/detailed
+ */
+router.get('/detailed', authMiddleware, favoritesController.getUserFavoritesDetailed);
+
+/**
+ * Verificar si un item es favorito
+ * GET /api/v1/favorites/check
+ */
+router.get('/check', authMiddleware, favoritesController.checkFavorite);
+
+/**
+ * Eliminar favorito
+ * DELETE /api/v1/favorites
+ */
+router.delete('/', authMiddleware, favoritesController.deleteFavorite);
 
 module.exports = router;
