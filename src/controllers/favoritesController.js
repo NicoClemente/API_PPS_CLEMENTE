@@ -148,7 +148,7 @@ exports.getUserFavorites = async (req, res) => {
 };
 
 /**
- * Obtener favoritos con detalles completos (SIMPLIFICADO)
+ * Obtener favoritos con detalles completos 
  */
 exports.getUserFavoritesDetailed = async (req, res) => {
   try {

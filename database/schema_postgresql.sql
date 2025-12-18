@@ -188,7 +188,7 @@ INSERT INTO users (nombre, apellido, email, password, telefono)
 VALUES (
     'Usuario',
     'Demo',
-    'demo@flixfinder.com',
+    'Prueba123@prueba.com',
     '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
     '1234567890'
 )
