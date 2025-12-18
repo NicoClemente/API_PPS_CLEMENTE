@@ -638,7 +638,7 @@
                                 "api",
                                 "v1",
                                 "users",
-                                "1"
+                                "4"
                             ]
                         },
                         "description": "Obtener detalles de un usuario por ID"
@@ -663,7 +663,7 @@
                             "raw": "{\n  \"nombre\": \"Ana María\",\n  \"apellido\": \"García\",\n  \"telefono\": \"987654321\"\n}"
                         },
                         "url": {
-                            "raw": "{{base_url}}/api/v1/users/1",
+                            "raw": "{{base_url}}/api/v1/users/4",
                             "host": [
                                 "{{base_url}}"
                             ],
@@ -671,7 +671,7 @@
                                 "api",
                                 "v1",
                                 "users",
-                                "1"
+                                "4"
                             ]
                         },
                         "description": "Actualizar un usuario por ID"
