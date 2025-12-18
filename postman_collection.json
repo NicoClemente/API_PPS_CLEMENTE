@@ -1,879 +1,1097 @@
 {
-  "info": {
-    "name": "API PPS Clemente - FlixFinder",
-    "description": "Colección completa de la API FlixFinder para el proyecto PPS Clemente. Incluye autenticación, películas, series, actores, usuarios, favoritos y reseñas.",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "version": "3.1.0"
-  },
-  "variable": [
-    {
-      "key": "base_url",
-      "value": "http://localhost:3000",
-      "type": "string"
+    "info": {
+        "name": "API PPS Clemente - FlixFinder",
+        "description": "Colección completa de la API FlixFinder para el proyecto PPS Clemente. Incluye autenticación, películas, series, actores, usuarios, favoritos y reseñas.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "version": "3.1.0"
     },
-    {
-      "key": "api_key",
-      "value": "",
-      "type": "string",
-      "description": "API Key requerida para rutas protegidas"
-    },
-    {
-      "key": "token",
-      "value": "",
-      "type": "string",
-      "description": "JWT Token para rutas que requieren autenticación"
-    }
-  ],
-  "item": [
-    {
-      "name": "Información API",
-      "item": [
+    "variable": [
         {
-          "name": "GET / - Información de la API",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/",
-              "host": ["{{base_url}}"],
-              "path": [""]
-            },
-            "description": "Obtener información general de la API"
-          }
+            "key": "base_url",
+            "value": "http://localhost:3000",
+            "type": "string"
         },
         {
-          "name": "GET /health - Estado del servidor",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/health",
-              "host": ["{{base_url}}"],
-              "path": ["health"]
-            },
-            "description": "Verificar el estado del servidor"
-          }
+            "key": "api_key",
+            "value": "",
+            "type": "string",
+            "description": "API Key requerida para rutas protegidas"
+        },
+        {
+            "key": "token",
+            "value": "",
+            "type": "string",
+            "description": "JWT Token para rutas que requieren autenticación"
         }
-      ]
-    },
-    {
-      "name": "Autenticación",
-      "item": [
+    ],
+    "item": [
         {
-          "name": "POST /auth/register - Registrar usuario",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Juan\",\n  \"apellido\": \"Pérez\",\n  \"email\": \"juan@example.com\",\n  \"password\": \"password123\",\n  \"telefono\": \"123456789\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/auth/register",
-              "host": ["{{base_url}}"],
-              "path": ["auth", "register"]
-            },
-            "description": "Registrar un nuevo usuario"
-          }
-        },
-        {
-          "name": "POST /auth/login - Iniciar sesión",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"juan@example.com\",\n  \"password\": \"password123\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["auth", "login"]
-            },
-            "description": "Iniciar sesión y obtener JWT token"
-          }
-        },
-        {
-          "name": "GET /auth/profile - Obtener perfil",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/auth/profile",
-              "host": ["{{base_url}}"],
-              "path": ["auth", "profile"]
-            },
-            "description": "Obtener el perfil del usuario autenticado"
-          }
-        },
-        {
-          "name": "PUT /auth/profile - Actualizar perfil",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Juan Carlos\",\n  \"apellido\": \"Pérez\",\n  \"telefono\": \"987654321\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/auth/profile",
-              "host": ["{{base_url}}"],
-              "path": ["auth", "profile"]
-            },
-            "description": "Actualizar el perfil del usuario"
-          }
-        },
-        {
-          "name": "PUT /auth/change-password - Cambiar contraseña",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"currentPassword\": \"password123\",\n  \"newPassword\": \"newpassword123\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/auth/change-password",
-              "host": ["{{base_url}}"],
-              "path": ["auth", "change-password"]
-            },
-            "description": "Cambiar la contraseña del usuario"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Películas",
-      "item": [
-        {
-          "name": "GET /api/v1/peliculas - Películas populares",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/peliculas",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "peliculas"]
-            },
-            "description": "Obtener películas populares"
-          }
-        },
-        {
-          "name": "GET /api/v1/peliculas/generos - Lista de géneros",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/peliculas/generos",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "peliculas", "generos"]
-            },
-            "description": "Obtener lista de géneros de películas"
-          }
-        },
-        {
-          "name": "GET /api/v1/peliculas/generos?genre=28 - Películas por género",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/peliculas/generos?genre=28",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "peliculas", "generos"],
-              "query": [
+            "name": "Información API",
+            "item": [
                 {
-                  "key": "genre",
-                  "value": "28"
-                }
-              ]
-            },
-            "description": "Obtener películas de un género específico (28 = Action)"
-          }
-        },
-        {
-          "name": "GET /api/v1/peliculas/buscar - Buscar películas",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/peliculas/buscar?query=Avengers",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "peliculas", "buscar"],
-              "query": [
-                {
-                  "key": "query",
-                  "value": "Avengers"
-                }
-              ]
-            },
-            "description": "Buscar películas por título"
-          }
-        },
-        {
-          "name": "GET /api/v1/peliculas/:id - Película por ID",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/peliculas/550",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "peliculas", "550"]
-            },
-            "description": "Obtener detalles de una película por ID (550 = Fight Club)"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Series",
-      "item": [
-        {
-          "name": "GET /api/v1/series - Series populares",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/series",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "series"]
-            },
-            "description": "Obtener series populares"
-          }
-        },
-        {
-          "name": "GET /api/v1/series/genero - Series por género",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/series/genero?genre=10759",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "series", "genero"],
-              "query": [
-                {
-                  "key": "genre",
-                  "value": "10759"
-                }
-              ]
-            },
-            "description": "Obtener series de un género específico (10759 = Action & Adventure)"
-          }
-        },
-        {
-          "name": "GET /api/v1/series/buscar - Buscar series",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/series/buscar?query=Breaking Bad",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "series", "buscar"],
-              "query": [
-                {
-                  "key": "query",
-                  "value": "Breaking Bad"
-                }
-              ]
-            },
-            "description": "Buscar series por título"
-          }
-        },
-        {
-          "name": "GET /api/v1/series/:id - Serie por ID",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/series/1399",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "series", "1399"]
-            },
-            "description": "Obtener detalles de una serie por ID (1399 = Game of Thrones)"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Actores",
-      "item": [
-        {
-          "name": "GET /api/v1/actores - Actores populares",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/actores",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "actores"]
-            },
-            "description": "Obtener actores populares"
-          }
-        },
-        {
-          "name": "GET /api/v1/actores/name - Buscar actor por nombre",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/actores/name?query=Leonardo DiCaprio",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "actores", "name"],
-              "query": [
-                {
-                  "key": "query",
-                  "value": "Leonardo DiCaprio"
-                }
-              ]
-            },
-            "description": "Buscar actor por nombre"
-          }
-        },
-        {
-          "name": "GET /api/v1/actores/:id - Actor por ID",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/actores/6193",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "actores", "6193"]
-            },
-            "description": "Obtener detalles de un actor por ID (6193 = Leonardo DiCaprio)"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Usuarios",
-      "item": [
-        {
-          "name": "POST /api/v1/users - Crear usuario",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Ana\",\n  \"apellido\": \"García\",\n  \"email\": \"ana@example.com\",\n  \"password\": \"password123\",\n  \"telefono\": \"123456789\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/v1/users",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "users"]
-            },
-            "description": "Crear un nuevo usuario"
-          }
-        },
-        {
-          "name": "GET /api/v1/users - Obtener todos los usuarios",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/users?page=1&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "users"],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "1"
+                    "name": "GET / - Información de la API",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                ""
+                            ]
+                        },
+                        "description": "Obtener información general de la API"
+                    }
                 },
                 {
-                  "key": "limit",
-                  "value": "20"
+                    "name": "GET /health - Estado del servidor",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/health",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "health"
+                            ]
+                        },
+                        "description": "Verificar el estado del servidor"
+                    }
                 }
-              ]
-            },
-            "description": "Obtener lista de usuarios con paginación"
-          }
+            ]
         },
         {
-          "name": "GET /api/v1/users/:id - Usuario por ID",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/users/1",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "users", "1"]
-            },
-            "description": "Obtener detalles de un usuario por ID"
-          }
-        },
-        {
-          "name": "PUT /api/v1/users/:id - Actualizar usuario",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Ana María\",\n  \"apellido\": \"García\",\n  \"telefono\": \"987654321\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/v1/users/1",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "users", "1"]
-            },
-            "description": "Actualizar un usuario por ID"
-          }
-        },
-        {
-          "name": "DELETE /api/v1/users/:id - Eliminar usuario",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/users/1",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "users", "1"]
-            },
-            "description": "Eliminar un usuario por ID"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Favoritos",
-      "item": [
-        {
-          "name": "POST /api/v1/favorites - Agregar favorito",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"item_id\": 550,\n  \"item_type\": \"movie\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/v1/favorites",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "favorites"]
-            },
-            "description": "Agregar un item a favoritos"
-          }
-        },
-        {
-          "name": "POST /api/v1/favorites/toggle - Toggle favorito",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"item_id\": 550,\n  \"item_type\": \"movie\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/v1/favorites/toggle",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "favorites", "toggle"]
-            },
-            "description": "Agregar o quitar de favoritos (toggle)"
-          }
-        },
-        {
-          "name": "GET /api/v1/favorites - Obtener favoritos",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/favorites",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "favorites"]
-            },
-            "description": "Obtener lista de favoritos del usuario"
-          }
-        },
-        {
-          "name": "GET /api/v1/favorites/detailed - Favoritos detallados",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/favorites/detailed",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "favorites", "detailed"]
-            },
-            "description": "Obtener favoritos con detalles completos"
-          }
-        },
-        {
-          "name": "GET /api/v1/favorites/check - Verificar favorito",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/favorites/check?item_id=550&item_type=movie",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "favorites", "check"],
-              "query": [
+            "name": "Autenticación",
+            "item": [
                 {
-                  "key": "item_id",
-                  "value": "550"
+                    "name": "POST /auth/register - Registrar usuario",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"nombre\": \"Juan\",\n  \"apellido\": \"Pérez\",\n  \"email\": \"juan@example.com\",\n  \"password\": \"password123\",\n  \"telefono\": \"123456789\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/register",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "register"
+                            ]
+                        },
+                        "description": "Registrar un nuevo usuario"
+                    }
                 },
                 {
-                  "key": "item_type",
-                  "value": "movie"
-                }
-              ]
-            },
-            "description": "Verificar si un item es favorito"
-          }
-        },
-        {
-          "name": "DELETE /api/v1/favorites - Eliminar favorito",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"item_id\": 550,\n  \"item_type\": \"movie\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/v1/favorites",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "favorites"]
-            },
-            "description": "Eliminar un item de favoritos"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Reseñas",
-      "item": [
-        {
-          "name": "POST /api/v1/reviews - Crear/actualizar reseña",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"item_id\": 550,\n  \"item_type\": \"movie\",\n  \"rating\": 5,\n  \"comment\": \"Excelente película\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/v1/reviews",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "reviews"]
-            },
-            "description": "Crear o actualizar una reseña"
-          }
-        },
-        {
-          "name": "GET /api/v1/reviews - Reseñas del usuario",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/reviews",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "reviews"]
-            },
-            "description": "Obtener reseñas del usuario autenticado"
-          }
-        },
-        {
-          "name": "GET /api/v1/reviews/single - Reseña específica",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/reviews/single?item_id=550&item_type=movie",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "reviews", "single"],
-              "query": [
-                {
-                  "key": "item_id",
-                  "value": "550"
+                    "name": "POST /auth/login - Iniciar sesión",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"juan@example.com\",\n  \"password\": \"password123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "login"
+                            ]
+                        },
+                        "description": "Iniciar sesión y obtener JWT token"
+                    }
                 },
                 {
-                  "key": "item_type",
-                  "value": "movie"
-                }
-              ]
-            },
-            "description": "Obtener una reseña específica del usuario"
-          }
-        },
-        {
-          "name": "GET /api/v1/reviews/item - Reseñas de un item",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/reviews/item?item_id=550&item_type=movie",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "reviews", "item"],
-              "query": [
-                {
-                  "key": "item_id",
-                  "value": "550"
+                    "name": "GET /auth/profile - Obtener perfil",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/auth/profile",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "profile"
+                            ]
+                        },
+                        "description": "Obtener el perfil del usuario autenticado"
+                    }
                 },
                 {
-                  "key": "item_type",
-                  "value": "movie"
+                    "name": "PUT /auth/profile - Actualizar perfil",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"nombre\": \"Juan Carlos\",\n  \"apellido\": \"Pérez\",\n  \"telefono\": \"987654321\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/profile",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "profile"
+                            ]
+                        },
+                        "description": "Actualizar el perfil del usuario"
+                    }
+                },
+                {
+                    "name": "PUT /auth/change-password - Cambiar contraseña",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"currentPassword\": \"password123\",\n  \"newPassword\": \"newpassword123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/change-password",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "change-password"
+                            ]
+                        },
+                        "description": "Cambiar la contraseña del usuario"
+                    }
                 }
-              ]
-            },
-            "description": "Obtener todas las reseñas de un item específico"
-          }
+            ]
         },
         {
-          "name": "DELETE /api/v1/reviews - Eliminar reseña",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "X-API-KEY",
-                "value": "{{api_key}}"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"item_id\": 550,\n  \"item_type\": \"movie\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/v1/reviews",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "reviews"]
-            },
-            "description": "Eliminar una reseña"
-          }
+            "name": "Películas",
+            "item": [
+                {
+                    "name": "GET /api/v1/peliculas - Películas populares",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/peliculas",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "peliculas"
+                            ]
+                        },
+                        "description": "Obtener películas populares"
+                    }
+                },
+                {
+                    "name": "GET /api/v1/peliculas/generos - Lista de géneros",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/peliculas/generos",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "peliculas",
+                                "generos"
+                            ]
+                        },
+                        "description": "Obtener lista de géneros de películas"
+                    }
+                },
+                {
+                    "name": "GET /api/v1/peliculas/generos?genre=drama - Películas por género",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/peliculas/generos?genre=drama",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "peliculas",
+                                "generos"
+                            ],
+                            "query": [
+                                {
+                                    "key": "genre",
+                                    "value": "drama"
+                                }
+                            ]
+                        },
+                        "description": "Obtener películas de un género específico (drama, terror, Action, etc)"
+                    }
+                },
+                {
+                    "name": "GET /api/v1/peliculas/buscar - Buscar películas",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/peliculas/buscar?query=Avengers",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "peliculas",
+                                "buscar"
+                            ],
+                            "query": [
+                                {
+                                    "key": "query",
+                                    "value": "Avengers"
+                                }
+                            ]
+                        },
+                        "description": "Buscar películas por título"
+                    }
+                },
+                {
+                    "name": "GET /api/v1/peliculas/:id - Película por ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/peliculas/550",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "peliculas",
+                                "550"
+                            ]
+                        },
+                        "description": "Obtener detalles de una película por ID (550 = Fight Club)"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Series",
+            "item": [
+                {
+                    "name": "GET /api/v1/series - Series populares",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/series",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "series"
+                            ]
+                        },
+                        "description": "Obtener series populares"
+                    }
+                },
+                {
+                    "name": "GET /api/v1/series/genero - Series por género",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/series/genero?genre=drama",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "series",
+                                "genero"
+                            ],
+                            "query": [
+                                {
+                                    "key": "genre",
+                                    "value": "drama"
+                                }
+                            ]
+                        },
+                        "description": "Obtener series de un género específico (drama, terror, Action & Adventure, etc)"
+                    }
+                },
+                {
+                    "name": "GET /api/v1/series/buscar - Buscar series",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/series/buscar?query=Breaking Bad",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "series",
+                                "buscar"
+                            ],
+                            "query": [
+                                {
+                                    "key": "query",
+                                    "value": "Breaking Bad"
+                                }
+                            ]
+                        },
+                        "description": "Buscar series por título"
+                    }
+                },
+                {
+                    "name": "GET /api/v1/series/:id - Serie por ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/series/1399",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "series",
+                                "1399"
+                            ]
+                        },
+                        "description": "Obtener detalles de una serie por ID (1399 = Game of Thrones)"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Actores",
+            "item": [
+                {
+                    "name": "GET /api/v1/actores - Actores populares",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/actores",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "actores"
+                            ]
+                        },
+                        "description": "Obtener actores populares desde TMDb"
+                    }
+                },
+                {
+                    "name": "GET /api/v1/actores/name - Buscar actor por nombre",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/actores/name?nombre=Leonardo DiCaprio",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "actores",
+                                "name"
+                            ],
+                            "query": [
+                                {
+                                    "key": "nombre",
+                                    "value": "Leonardo DiCaprio"
+                                }
+                            ]
+                        },
+                        "description": "Buscar actor por nombre utilizando la API de TMDb"
+                    }
+                },
+                {
+                    "name": "GET /api/v1/actores/:id - Actor por ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/actores/6193",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "actores",
+                                "6193"
+                            ]
+                        },
+                        "description": "Obtener detalles de un actor por ID (6193 = Leonardo DiCaprio)"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Usuarios",
+            "item": [
+                {
+                    "name": "POST /api/v1/users - Crear usuario",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"nombre\": \"Ana\",\n  \"apellido\": \"García\",\n  \"email\": \"ana@example.com\",\n  \"password\": \"password123\",\n  \"telefono\": \"123456789\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/users",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "users"
+                            ]
+                        },
+                        "description": "Crear un nuevo usuario"
+                    }
+                },
+                {
+                    "name": "GET /api/v1/users - Obtener todos los usuarios",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/users?page=1&limit=20",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "users"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        },
+                        "description": "Obtener lista de usuarios con paginación"
+                    }
+                },
+                {
+                    "name": "GET /api/v1/users/:id - Usuario por ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/users/4",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "users",
+                                "1"
+                            ]
+                        },
+                        "description": "Obtener detalles de un usuario por ID"
+                    }
+                },
+                {
+                    "name": "PUT /api/v1/users/:id - Actualizar usuario",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"nombre\": \"Ana María\",\n  \"apellido\": \"García\",\n  \"telefono\": \"987654321\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/users/1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "users",
+                                "1"
+                            ]
+                        },
+                        "description": "Actualizar un usuario por ID"
+                    }
+                },
+                {
+                    "name": "DELETE /api/v1/users/:id - Eliminar usuario",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/users/1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "users",
+                                "1"
+                            ]
+                        },
+                        "description": "Eliminar un usuario por ID"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Favoritos",
+            "item": [
+                {
+                    "name": "POST /api/v1/favorites - Agregar favorito",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"item_id\": 550,\n  \"item_type\": \"movie\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/favorites",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "favorites"
+                            ]
+                        },
+                        "description": "Agregar un item a favoritos"
+                    }
+                },
+                {
+                    "name": "POST /api/v1/favorites/toggle - Toggle favorito",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"item_id\": 550,\n  \"item_type\": \"movie\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/favorites/toggle",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "favorites",
+                                "toggle"
+                            ]
+                        },
+                        "description": "Agregar o quitar de favoritos (toggle)"
+                    }
+                },
+                {
+                    "name": "GET /api/v1/favorites - Obtener favoritos",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/favorites",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "favorites"
+                            ]
+                        },
+                        "description": "Obtener lista de favoritos del usuario"
+                    }
+                },
+                {
+                    "name": "GET /api/v1/favorites/detailed - Favoritos detallados",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/favorites/detailed",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "favorites",
+                                "detailed"
+                            ]
+                        },
+                        "description": "Obtener favoritos con detalles completos"
+                    }
+                },
+                {
+                    "name": "GET /api/v1/favorites/check - Verificar favorito",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/favorites/check?item_id=550&item_type=movie",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "favorites",
+                                "check"
+                            ],
+                            "query": [
+                                {
+                                    "key": "item_id",
+                                    "value": "550"
+                                },
+                                {
+                                    "key": "item_type",
+                                    "value": "movie"
+                                }
+                            ]
+                        },
+                        "description": "Verificar si un item es favorito"
+                    }
+                },
+                {
+                    "name": "DELETE /api/v1/favorites - Eliminar favorito",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"item_id\": 550,\n  \"item_type\": \"movie\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/favorites",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "favorites"
+                            ]
+                        },
+                        "description": "Eliminar un item de favoritos"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Reseñas",
+            "item": [
+                {
+                    "name": "POST /api/v1/reviews - Crear/actualizar reseña",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"item_id\": 550,\n  \"item_type\": \"movie\",\n  \"rating\": 5,\n  \"comment\": \"Excelente película\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/reviews",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "reviews"
+                            ]
+                        },
+                        "description": "Crear o actualizar una reseña"
+                    }
+                },
+                {
+                    "name": "GET /api/v1/reviews - Reseñas del usuario",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/reviews",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "reviews"
+                            ]
+                        },
+                        "description": "Obtener reseñas del usuario autenticado"
+                    }
+                },
+                {
+                    "name": "GET /api/v1/reviews/single - Reseña específica",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/reviews/single?item_id=550&item_type=movie",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "reviews",
+                                "single"
+                            ],
+                            "query": [
+                                {
+                                    "key": "item_id",
+                                    "value": "550"
+                                },
+                                {
+                                    "key": "item_type",
+                                    "value": "movie"
+                                }
+                            ]
+                        },
+                        "description": "Obtener una reseña específica del usuario"
+                    }
+                },
+                {
+                    "name": "GET /api/v1/reviews/item - Reseñas de un item",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/reviews/item?item_id=550&item_type=movie",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "reviews",
+                                "item"
+                            ],
+                            "query": [
+                                {
+                                    "key": "item_id",
+                                    "value": "550"
+                                },
+                                {
+                                    "key": "item_type",
+                                    "value": "movie"
+                                }
+                            ]
+                        },
+                        "description": "Obtener todas las reseñas de un item específico"
+                    }
+                },
+                {
+                    "name": "DELETE /api/v1/reviews - Eliminar reseña",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "X-API-KEY",
+                                "value": "{{api_key}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"item_id\": 550,\n  \"item_type\": \"movie\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/reviews",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "reviews"
+                            ]
+                        },
+                        "description": "Eliminar una reseña"
+                    }
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }
