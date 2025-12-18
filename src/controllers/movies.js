@@ -1,6 +1,6 @@
 const axios = require('axios');
 const { request, response } = require('express');
-const { run, get, all } = require('../config/database');
+const pool = require('../config/database');
 
 const BASE_URL = process.env.TMDB_BASE_URL;
 const ACCESS_TOKEN = process.env.TMDB_ACCESS_TOKEN;
@@ -61,26 +61,26 @@ const createMovie = async (req = request, res = response) => {
     }
 
     // Verificar si ya existe
-    const existing = await get('SELECT id FROM movies WHERE tmdb_id = ?', [tmdb_id]);
-    if (existing) {
+    const existing = await pool.query('SELECT id FROM movies WHERE tmdb_id = $1', [tmdb_id]);
+    if (existing.rows.length > 0) {
       return res.status(409).json({
         msg: 'Error',
         error: 'La película ya existe en la base de datos',
-        data: { id: existing.id }
+        data: { id: existing.rows[0].id }
       });
     }
 
     // Insertar
-    const result = await run(
+    const result = await pool.query(
       `INSERT INTO movies (tmdb_id, title, overview, release_date, vote_average, poster_path, genre_ids)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
       [tmdb_id, title, overview, release_date, vote_average, poster_path, JSON.stringify(genre_ids)]
     );
 
     res.status(201).json({
       msg: 'Película creada exitosamente',
       data: {
-        id: result.id,
+        id: result.rows[0].id,
         tmdb_id,
         title
       }
@@ -99,23 +99,23 @@ const getMoviesFromDB = async (req = request, res = response) => {
     const { page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
 
-    const movies = await all(
-      'SELECT * FROM movies ORDER BY created_at DESC LIMIT ? OFFSET ?',
+    const movies = await pool.query(
+      'SELECT * FROM movies ORDER BY created_at DESC LIMIT $1 OFFSET $2',
       [parseInt(limit), parseInt(offset)]
     );
 
-    const total = await get('SELECT COUNT(*) as count FROM movies');
+    const total = await pool.query('SELECT COUNT(*) as count FROM movies');
 
     res.status(200).json({
       msg: 'Ok',
-      data: movies.map(movie => ({
+      data: movies.rows.map(movie => ({
         ...movie,
         genre_ids: JSON.parse(movie.genre_ids || '[]')
       })),
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
-        total: total.count
+        total: parseInt(total.rows[0].count)
       }
     });
   } catch (error) {
@@ -131,9 +131,9 @@ const getMovieFromDBById = async (req = request, res = response) => {
   try {
     const { id } = req.params;
 
-    const movie = await get('SELECT * FROM movies WHERE id = ?', [id]);
+    const movie = await pool.query('SELECT * FROM movies WHERE id = $1', [id]);
 
-    if (!movie) {
+    if (movie.rows.length === 0) {
       return res.status(404).json({
         msg: 'Error',
         error: 'Película no encontrada'
@@ -143,8 +143,8 @@ const getMovieFromDBById = async (req = request, res = response) => {
     res.status(200).json({
       msg: 'Ok',
       data: {
-        ...movie,
-        genre_ids: JSON.parse(movie.genre_ids || '[]')
+        ...movie.rows[0],
+        genre_ids: JSON.parse(movie.rows[0].genre_ids || '[]')
       }
     });
   } catch (error) {
@@ -162,8 +162,8 @@ const updateMovie = async (req = request, res = response) => {
     const { title, overview, release_date, vote_average, poster_path, genre_ids } = req.body;
 
     // Verificar que existe
-    const existing = await get('SELECT id FROM movies WHERE id = ?', [id]);
-    if (!existing) {
+    const existing = await pool.query('SELECT id FROM movies WHERE id = $1', [id]);
+    if (existing.rows.length === 0) {
       return res.status(404).json({
         msg: 'Error',
         error: 'Película no encontrada'
@@ -171,15 +171,15 @@ const updateMovie = async (req = request, res = response) => {
     }
 
     // Actualizar
-    await run(
+    await pool.query(
       `UPDATE movies 
-       SET title = COALESCE(?, title),
-           overview = COALESCE(?, overview),
-           release_date = COALESCE(?, release_date),
-           vote_average = COALESCE(?, vote_average),
-           poster_path = COALESCE(?, poster_path),
-           genre_ids = COALESCE(?, genre_ids)
-       WHERE id = ?`,
+       SET title = COALESCE($1, title),
+           overview = COALESCE($2, overview),
+           release_date = COALESCE($3, release_date),
+           vote_average = COALESCE($4, vote_average),
+           poster_path = COALESCE($5, poster_path),
+           genre_ids = COALESCE($6, genre_ids)
+       WHERE id = $7`,
       [title, overview, release_date, vote_average, poster_path, 
        genre_ids ? JSON.stringify(genre_ids) : null, id]
     );
@@ -202,8 +202,8 @@ const deleteMovie = async (req = request, res = response) => {
     const { id } = req.params;
 
     // Verificar que existe
-    const existing = await get('SELECT id FROM movies WHERE id = ?', [id]);
-    if (!existing) {
+    const existing = await pool.query('SELECT id FROM movies WHERE id = $1', [id]);
+    if (existing.rows.length === 0) {
       return res.status(404).json({
         msg: 'Error',
         error: 'Película no encontrada'
@@ -211,7 +211,7 @@ const deleteMovie = async (req = request, res = response) => {
     }
 
     // Eliminar
-    await run('DELETE FROM movies WHERE id = ?', [id]);
+    await pool.query('DELETE FROM movies WHERE id = $1', [id]);
 
     res.status(200).json({
       msg: 'Película eliminada exitosamente',

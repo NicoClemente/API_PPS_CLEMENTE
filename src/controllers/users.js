@@ -1,5 +1,5 @@
 const { request, response } = require('express');
-const { run, get, all } = require('../config/database');
+const pool = require('../config/database');
 
 /**
  * Crear un nuevo usuario
@@ -27,25 +27,25 @@ const createUser = async (req = request, res = response) => {
     }
 
     // Verificar si el email ya existe
-    const existing = await get('SELECT id FROM users WHERE email = ?', [email]);
-    if (existing) {
+    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existing.rows.length > 0) {
       return res.status(409).json({
         msg: 'Error',
         error: 'El email ya está registrado',
-        data: { id: existing.id }
+        data: { id: existing.rows[0].id }
       });
     }
 
     // Insertar usuario
-    const result = await run(
-      'INSERT INTO users (nombre, apellido, email, telefono) VALUES (?, ?, ?, ?)',
+    const result = await pool.query(
+      'INSERT INTO users (nombre, apellido, email, telefono) VALUES ($1, $2, $3, $4) RETURNING id',
       [nombre, apellido, email, telefono || null]
     );
 
     res.status(201).json({
       msg: 'Usuario creado exitosamente',
       data: {
-        id: result.id,
+        id: result.rows[0].id,
         nombre,
         apellido,
         email,
@@ -70,20 +70,20 @@ const getAllUsers = async (req = request, res = response) => {
     const { page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
 
-    const users = await all(
-      'SELECT id, nombre, apellido, email, telefono, created_at, updated_at FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?',
+    const users = await pool.query(
+      'SELECT id, nombre, apellido, email, telefono, created_at, updated_at FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2',
       [parseInt(limit), parseInt(offset)]
     );
 
-    const total = await get('SELECT COUNT(*) as count FROM users');
+    const total = await pool.query('SELECT COUNT(*) as count FROM users');
 
     res.status(200).json({
       msg: 'Ok',
-      data: users,
+      data: users.rows,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
-        total: total.count
+        total: parseInt(total.rows[0].count)
       }
     });
   } catch (error) {
@@ -103,12 +103,12 @@ const getUserById = async (req = request, res = response) => {
   try {
     const { id } = req.params;
 
-    const user = await get(
-      'SELECT id, nombre, apellido, email, telefono, created_at, updated_at FROM users WHERE id = ?',
+    const user = await pool.query(
+      'SELECT id, nombre, apellido, email, telefono, created_at, updated_at FROM users WHERE id = $1',
       [id]
     );
 
-    if (!user) {
+    if (user.rows.length === 0) {
       return res.status(404).json({
         msg: 'Error',
         error: 'Usuario no encontrado'
@@ -117,7 +117,7 @@ const getUserById = async (req = request, res = response) => {
 
     res.status(200).json({
       msg: 'Ok',
-      data: user
+      data: user.rows[0]
     });
   } catch (error) {
     console.error(error);
@@ -138,8 +138,8 @@ const updateUser = async (req = request, res = response) => {
     const { nombre, apellido, email, telefono } = req.body;
 
     // Verificar que el usuario existe
-    const existing = await get('SELECT id FROM users WHERE id = ?', [id]);
-    if (!existing) {
+    const existing = await pool.query('SELECT id FROM users WHERE id = $1', [id]);
+    if (existing.rows.length === 0) {
       return res.status(404).json({
         msg: 'Error',
         error: 'Usuario no encontrado'
@@ -156,8 +156,8 @@ const updateUser = async (req = request, res = response) => {
         });
       }
 
-      const emailExists = await get('SELECT id FROM users WHERE email = ? AND id != ?', [email, id]);
-      if (emailExists) {
+      const emailExists = await pool.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, id]);
+      if (emailExists.rows.length > 0) {
         return res.status(409).json({
           msg: 'Error',
           error: 'El email ya está en uso por otro usuario'
@@ -166,25 +166,25 @@ const updateUser = async (req = request, res = response) => {
     }
 
     // Actualizar usuario
-    await run(
+    await pool.query(
       `UPDATE users 
-       SET nombre = COALESCE(?, nombre),
-           apellido = COALESCE(?, apellido),
-           email = COALESCE(?, email),
-           telefono = COALESCE(?, telefono)
-       WHERE id = ?`,
+       SET nombre = COALESCE($1, nombre),
+           apellido = COALESCE($2, apellido),
+           email = COALESCE($3, email),
+           telefono = COALESCE($4, telefono)
+       WHERE id = $5`,
       [nombre, apellido, email, telefono, id]
     );
 
     // Obtener usuario actualizado
-    const updatedUser = await get(
-      'SELECT id, nombre, apellido, email, telefono, created_at, updated_at FROM users WHERE id = ?',
+    const updatedUser = await pool.query(
+      'SELECT id, nombre, apellido, email, telefono, created_at, updated_at FROM users WHERE id = $1',
       [id]
     );
 
     res.status(200).json({
       msg: 'Usuario actualizado exitosamente',
-      data: updatedUser
+      data: updatedUser.rows[0]
     });
   } catch (error) {
     console.error(error);
@@ -204,8 +204,8 @@ const deleteUser = async (req = request, res = response) => {
     const { id } = req.params;
 
     // Verificar que el usuario existe
-    const existing = await get('SELECT id FROM users WHERE id = ?', [id]);
-    if (!existing) {
+    const existing = await pool.query('SELECT id FROM users WHERE id = $1', [id]);
+    if (existing.rows.length === 0) {
       return res.status(404).json({
         msg: 'Error',
         error: 'Usuario no encontrado'
@@ -213,7 +213,7 @@ const deleteUser = async (req = request, res = response) => {
     }
 
     // Eliminar usuario (los favoritos se eliminan automáticamente por CASCADE)
-    await run('DELETE FROM users WHERE id = ?', [id]);
+    await pool.query('DELETE FROM users WHERE id = $1', [id]);
 
     res.status(200).json({
       msg: 'Usuario eliminado exitosamente',
