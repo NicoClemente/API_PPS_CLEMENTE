@@ -396,8 +396,8 @@ Ver archivo `docs/DIAGRAMA_ER.md` para el diagrama completo.
 El schema se encuentra en `database/schema_postgresql.sql`. Ejecutarlo en Neon para crear las tablas.
 
 **Usuario de prueba incluido:**
-- Email: `demo@flixfinder.com`
-- Password: `demo123`
+- Email: `prueba123@prueba.com`
+- Password: `Prueba123`
 
 ---
 

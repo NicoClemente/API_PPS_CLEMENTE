@@ -1,9 +1,12 @@
 -- ============================================
 -- SCHEMA POSTGRESQL - FlixFinder PPS
--- Nicolas Clemente - UTN FRBB
+-- Autor: Nicolas Clemente
+-- Universidad: UTN FRBB
 -- ============================================
 
--- Tabla de Usuarios
+-- =========================
+-- TABLA: users
+-- =========================
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
@@ -16,7 +19,13 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Tabla de Películas (cache local de TMDb)
+COMMENT ON TABLE users IS 'Usuarios registrados en la aplicación';
+COMMENT ON COLUMN users.email IS 'Email único del usuario';
+COMMENT ON COLUMN users.password IS 'Password hasheado con bcrypt';
+
+-- =========================
+-- TABLA: movies (cache TMDb)
+-- =========================
 CREATE TABLE IF NOT EXISTS movies (
     id SERIAL PRIMARY KEY,
     tmdb_id VARCHAR(50) UNIQUE NOT NULL,
@@ -34,7 +43,11 @@ CREATE TABLE IF NOT EXISTS movies (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Tabla de Series (cache local de TMDb)
+COMMENT ON TABLE movies IS 'Cache local de películas obtenidas desde TMDb';
+
+-- =========================
+-- TABLA: series (cache TMDb)
+-- =========================
 CREATE TABLE IF NOT EXISTS series (
     id SERIAL PRIMARY KEY,
     tmdb_id VARCHAR(50) UNIQUE NOT NULL,
@@ -53,7 +66,11 @@ CREATE TABLE IF NOT EXISTS series (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Tabla de Actores (cache local de TMDb)
+COMMENT ON TABLE series IS 'Cache local de series obtenidas desde TMDb';
+
+-- =========================
+-- TABLA: actors (cache TMDb)
+-- =========================
 CREATE TABLE IF NOT EXISTS actors (
     id SERIAL PRIMARY KEY,
     tmdb_id VARCHAR(50) UNIQUE NOT NULL,
@@ -69,7 +86,11 @@ CREATE TABLE IF NOT EXISTS actors (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Tabla de Favoritos
+COMMENT ON TABLE actors IS 'Cache local de actores obtenidos desde TMDb';
+
+-- =========================
+-- TABLA: favorites
+-- =========================
 CREATE TABLE IF NOT EXISTS favorites (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -77,10 +98,14 @@ CREATE TABLE IF NOT EXISTS favorites (
     item_id VARCHAR(50) NOT NULL,
     tmdb_id VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user_id, item_type, item_id)
+    UNIQUE (user_id, item_type, item_id)
 );
 
--- Tabla de Reseñas
+COMMENT ON TABLE favorites IS 'Favoritos de usuarios (películas, series y actores)';
+
+-- =========================
+-- TABLA: reviews
+-- =========================
 CREATE TABLE IF NOT EXISTS reviews (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -92,67 +117,90 @@ CREATE TABLE IF NOT EXISTS reviews (
     is_favorite BOOLEAN DEFAULT false,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user_id, item_type, item_id)
+    UNIQUE (user_id, item_type, item_id)
 );
 
--- Índices para mejorar el rendimiento
+COMMENT ON TABLE reviews IS 'Reviews y calificaciones de usuarios para películas y series';
+COMMENT ON COLUMN reviews.rating IS 'Calificación del 1 al 10';
+COMMENT ON COLUMN reviews.is_favorite IS 'Indica si el item es favorito del usuario';
+
+-- =========================
+-- ÍNDICES
+-- =========================
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
 CREATE INDEX IF NOT EXISTS idx_movies_tmdb_id ON movies(tmdb_id);
 CREATE INDEX IF NOT EXISTS idx_series_tmdb_id ON series(tmdb_id);
 CREATE INDEX IF NOT EXISTS idx_actors_tmdb_id ON actors(tmdb_id);
+
 CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON favorites(user_id);
 CREATE INDEX IF NOT EXISTS idx_favorites_item ON favorites(item_type, item_id);
+
 CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON reviews(user_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_item ON reviews(item_type, item_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_rating ON reviews(rating);
 
--- Función para actualizar updated_at automáticamente
+-- =========================
+-- FUNCIÓN: updated_at
+-- =========================
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = CURRENT_TIMESTAMP;
     RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$ LANGUAGE plpgsql;
 
--- Triggers para actualizar updated_at
-DROP TRIGGER IF EXISTS update_users_updated_at ON users;
-CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- =========================
+-- TRIGGERS
+-- =========================
+DROP TRIGGER IF EXISTS trg_users_updated_at ON users;
+CREATE TRIGGER trg_users_updated_at
+BEFORE UPDATE ON users
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-DROP TRIGGER IF EXISTS update_movies_updated_at ON movies;
-CREATE TRIGGER update_movies_updated_at BEFORE UPDATE ON movies
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS trg_movies_updated_at ON movies;
+CREATE TRIGGER trg_movies_updated_at
+BEFORE UPDATE ON movies
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-DROP TRIGGER IF EXISTS update_series_updated_at ON series;
-CREATE TRIGGER update_series_updated_at BEFORE UPDATE ON series
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS trg_series_updated_at ON series;
+CREATE TRIGGER trg_series_updated_at
+BEFORE UPDATE ON series
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-DROP TRIGGER IF EXISTS update_actors_updated_at ON actors;
-CREATE TRIGGER update_actors_updated_at BEFORE UPDATE ON actors
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS trg_actors_updated_at ON actors;
+CREATE TRIGGER trg_actors_updated_at
+BEFORE UPDATE ON actors
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-DROP TRIGGER IF EXISTS update_reviews_updated_at ON reviews;
-CREATE TRIGGER update_reviews_updated_at BEFORE UPDATE ON reviews
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS trg_reviews_updated_at ON reviews;
+CREATE TRIGGER trg_reviews_updated_at
+BEFORE UPDATE ON reviews
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Datos de ejemplo (opcional)
--- Usuario de prueba: demo@flixfinder.com / password: demo123
--- Password hasheado con bcrypt (10 rounds)
-INSERT INTO users (nombre, apellido, email, password, telefono) 
+-- =========================
+-- USUARIO DEMO
+-- Email: prueba123@prueba.com
+-- Password: prueba123
+-- =========================
+INSERT INTO users (nombre, apellido, email, password, telefono)
 VALUES (
     'Usuario',
     'Demo',
     'demo@flixfinder.com',
     '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
     '1234567890'
-) ON CONFLICT (email) DO NOTHING;
+)
+ON CONFLICT (email) DO NOTHING;
 
--- Verificar que todo se creó correctamente
+-- =========================
+-- VERIFICACIÓN FINAL
+-- =========================
 DO $$
 BEGIN
-    RAISE NOTICE '✅ Schema cargado correctamente';
-    RAISE NOTICE 'Tablas creadas: users, movies, series, actors, favorites, reviews';
-    RAISE NOTICE 'Índices creados: 8 índices';
-    RAISE NOTICE 'Triggers creados: 5 triggers';
-    RAISE NOTICE 'Usuario demo creado: demo@flixfinder.com / demo123';
+    RAISE NOTICE '✅ Schema FlixFinder creado correctamente';
+    RAISE NOTICE 'Tablas: users, movies, series, actors, favorites, reviews';
+    RAISE NOTICE 'Índices y triggers activos';
+    RAISE NOTICE 'Usuario demo listo';
 END $$;
