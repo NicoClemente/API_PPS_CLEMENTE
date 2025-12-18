@@ -1,16 +1,25 @@
 erDiagram
-    %% Entidad central: Usuarios
-    USERS ||--o{ FAVORITES : "tiene favoritos"
-    USERS ||--o{ REVIEWS : "escribe reseñas"
+    %% =========================
+    %% ENTIDAD CENTRAL
+    %% =========================
+    USERS ||--o{ FAVORITES : "tiene"
+    USERS ||--o{ REVIEWS : "escribe"
 
-    %% Entidades de contenido multimedia
-    MOVIES ||--o{ FAVORITES : "es favorito"
-    MOVIES ||--o{ REVIEWS : "tiene reseñas"
-    SERIES ||--o{ FAVORITES : "es favorito"
-    SERIES ||--o{ REVIEWS : "tiene reseñas"
-    ACTORS ||--o{ FAVORITES : "es favorito"
+    %% =========================
+    %% ENTIDADES EXTERNAS (TMDb)
+    %% No persistidas localmente
+    %% =========================
+    TMDB_MOVIES ||--o{ FAVORITES : "puede ser"
+    TMDB_SERIES ||--o{ FAVORITES : "puede ser"
+    TMDB_ACTORS ||--o{ FAVORITES : "puede ser"
 
-    %% Definición de entidades con atributos
+    TMDB_MOVIES ||--o{ REVIEWS : "recibe"
+    TMDB_SERIES ||--o{ REVIEWS : "recibe"
+
+    %% =========================
+    %% DEFINICIÓN DE ENTIDADES
+    %% =========================
+
     USERS {
         int id PK "Identificador único"
         string nombre "Nombre del usuario"
@@ -23,74 +32,55 @@ erDiagram
         datetime updated_at "Fecha de actualización"
     }
 
-    MOVIES {
-        int id PK "Identificador único"
-        string tmdb_id UK "ID de TMDb"
-        string title "Título de la película"
+    %% =========================
+    %% ENTIDADES EXTERNAS TMDb
+    %% =========================
+
+    TMDB_MOVIES {
+        string tmdb_id PK "ID de película en TMDb"
+        string title "Título"
         text overview "Descripción"
-        string release_date "Fecha de lanzamiento"
+        string release_date "Fecha de estreno"
         float vote_average "Puntuación promedio"
-        int vote_count "Número de votos"
         string poster_path "Ruta del póster"
-        string backdrop_path "Ruta del fondo"
-        text genre_ids "Géneros (JSONB)"
-        int runtime "Duración en minutos"
-        string original_language "Idioma original"
-        datetime created_at "Fecha de creación"
-        datetime updated_at "Fecha de actualización"
     }
 
-    SERIES {
-        int id PK "Identificador único"
-        string tmdb_id UK "ID de TMDb"
-        string name "Nombre de la serie"
+    TMDB_SERIES {
+        string tmdb_id PK "ID de serie en TMDb"
+        string name "Nombre"
         text overview "Descripción"
         string first_air_date "Fecha de estreno"
         float vote_average "Puntuación promedio"
-        int vote_count "Número de votos"
         string poster_path "Ruta del póster"
-        string backdrop_path "Ruta del fondo"
-        text genre_ids "Géneros (JSONB)"
-        int number_of_seasons "Número de temporadas"
-        int number_of_episodes "Número de episodios"
-        string original_language "Idioma original"
-        datetime created_at "Fecha de creación"
-        datetime updated_at "Fecha de actualización"
     }
 
-    ACTORS {
-        int id PK "Identificador único"
-        string tmdb_id UK "ID de TMDb"
+    TMDB_ACTORS {
+        string tmdb_id PK "ID de actor en TMDb"
         string name "Nombre del actor"
-        string profile_path "Ruta de la foto de perfil"
+        string profile_path "Foto de perfil"
         text biography "Biografía"
-        string birthday "Fecha de nacimiento"
-        string deathday "Fecha de fallecimiento"
-        string place_of_birth "Lugar de nacimiento"
-        string known_for_department "Departamento conocido"
         float popularity "Popularidad"
-        datetime created_at "Fecha de creación"
-        datetime updated_at "Fecha de actualización"
     }
+
+    %% =========================
+    %% ENTIDADES PERSISTIDAS
+    %% =========================
 
     FAVORITES {
         int id PK "Identificador único"
-        int user_id FK "ID del usuario"
-        string item_type "Tipo: movie/series/actor"
-        string item_id "ID del item (tmdb_id)"
-        string tmdb_id "ID de TMDb del item"
+        int user_id FK "Usuario propietario"
+        string item_type "movie | series | actor"
+        string item_tmdb_id "ID TMDb del item"
         datetime created_at "Fecha de creación"
     }
 
     REVIEWS {
         int id PK "Identificador único"
-        int user_id FK "ID del usuario"
-        string item_type "Tipo: movie/series"
-        string item_id "ID del item (tmdb_id)"
-        string tmdb_id "ID de TMDb del item"
-        int rating "Puntuación 1-10"
+        int user_id FK "Usuario autor"
+        string item_type "movie | series"
+        string item_tmdb_id "ID TMDb del item"
+        int rating "Puntuación (1–10)"
         text review_text "Texto de la reseña"
-        boolean is_favorite "Marcado como favorito"
         datetime created_at "Fecha de creación"
         datetime updated_at "Fecha de actualización"
     }
