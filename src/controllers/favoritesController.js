@@ -1,4 +1,43 @@
 const pool = require('../config/database');
+const axios = require('axios');
+
+// Configuración de TMDB
+const TMDB_BASE_URL = process.env.TMDB_BASE_URL || 'https://api.themoviedb.org/3';
+const TMDB_ACCESS_TOKEN = process.env.TMDB_ACCESS_TOKEN;
+
+const tmdbAxios = axios.create({
+  baseURL: TMDB_BASE_URL,
+  headers: {
+    Authorization: `Bearer ${TMDB_ACCESS_TOKEN}`,
+    accept: 'application/json'
+  }
+});
+
+/**
+ * Validar si un ID de TMDB existe
+ */
+const validateTmdbId = async (type, tmdbId) => {
+  try {
+    let endpoint;
+    if (type === 'movie') {
+      endpoint = `/movie/${tmdbId}`;
+    } else if (type === 'series') {
+      endpoint = `/tv/${tmdbId}`;
+    } else if (type === 'actor') {
+      endpoint = `/person/${tmdbId}`;
+    } else {
+      return null;
+    }
+
+    const response = await tmdbAxios.get(endpoint, {
+      params: { language: 'es-ES' }
+    });
+    return response.data;
+  } catch (error) {
+    console.log(`❌ TMDB ID ${tmdbId} para ${type} no válido:`, error.response?.status);
+    return null;
+  }
+};
 
 /**
  * Agregar un favorito
@@ -23,6 +62,23 @@ exports.addFavorite = async (req, res) => {
       });
     }
 
+    // Validar TMDB ID si se proporciona
+    let validTmdbId = tmdb_id;
+    if (tmdb_id) {
+      console.log(`🔍 Validando TMDB ID ${tmdb_id} para ${item_type}...`);
+      const tmdbData = await validateTmdbId(item_type, tmdb_id);
+      if (!tmdbData) {
+        return res.status(400).json({
+          success: false,
+          msg: `El TMDB ID ${tmdb_id} no es válido para ${item_type}`
+        });
+      }
+      console.log(`✅ TMDB ID válido: ${tmdbData.title || tmdbData.name}`);
+    } else {
+      // Si no se proporciona tmdb_id, usar item_id como fallback
+      validTmdbId = item_id;
+    }
+
     const query = `
       INSERT INTO favorites (user_id, item_type, item_id, tmdb_id)
       VALUES ($1, $2, $3, $4)
@@ -30,7 +86,7 @@ exports.addFavorite = async (req, res) => {
       RETURNING *
     `;
 
-    const result = await pool.query(query, [user_id, item_type, item_id, tmdb_id || item_id]);
+    const result = await pool.query(query, [user_id, item_type, item_id, validTmdbId]);
 
     if (result.rows.length === 0) {
       return res.status(200).json({
@@ -228,6 +284,23 @@ exports.toggleFavorite = async (req, res) => {
       });
     }
 
+    // Validar TMDB ID si se proporciona
+    let validTmdbId = tmdb_id;
+    if (tmdb_id) {
+      console.log(`🔍 Validando TMDB ID ${tmdb_id} para ${item_type}...`);
+      const tmdbData = await validateTmdbId(item_type, tmdb_id);
+      if (!tmdbData) {
+        return res.status(400).json({
+          success: false,
+          msg: `El TMDB ID ${tmdb_id} no es válido para ${item_type}`
+        });
+      }
+      console.log(`✅ TMDB ID válido: ${tmdbData.title || tmdbData.name}`);
+    } else {
+      // Si no se proporciona tmdb_id, usar item_id como fallback
+      validTmdbId = item_id;
+    }
+
     // Verificar si existe
     const checkQuery = `
       SELECT * FROM favorites 
@@ -256,7 +329,7 @@ exports.toggleFavorite = async (req, res) => {
         VALUES ($1, $2, $3, $4)
         RETURNING *
       `;
-      const insertResult = await pool.query(insertQuery, [user_id, item_type, item_id, tmdb_id || item_id]);
+      const insertResult = await pool.query(insertQuery, [user_id, item_type, item_id, validTmdbId]);
 
       return res.json({
         success: true,

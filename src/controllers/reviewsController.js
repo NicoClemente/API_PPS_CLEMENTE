@@ -1,4 +1,33 @@
 const pool = require('../config/database');
+const axios = require('axios');
+
+// Configuración de TMDB
+const TMDB_BASE_URL = process.env.TMDB_BASE_URL || 'https://api.themoviedb.org/3';
+const TMDB_ACCESS_TOKEN = process.env.TMDB_ACCESS_TOKEN;
+
+const tmdbAxios = axios.create({
+  baseURL: TMDB_BASE_URL,
+  headers: {
+    Authorization: `Bearer ${TMDB_ACCESS_TOKEN}`,
+    accept: 'application/json'
+  }
+});
+
+/**
+ * Validar si un ID de TMDB existe
+ */
+const validateTmdbId = async (type, tmdbId) => {
+  try {
+    const endpoint = type === 'movie' ? `/movie/${tmdbId}` : `/tv/${tmdbId}`;
+    const response = await tmdbAxios.get(endpoint, {
+      params: { language: 'es-ES' }
+    });
+    return response.data;
+  } catch (error) {
+    console.log(`❌ TMDB ID ${tmdbId} para ${type} no válido:`, error.response?.status);
+    return null;
+  }
+};
 
 /**
  * Crear o actualizar una review
@@ -31,6 +60,23 @@ exports.createOrUpdateReview = async (req, res) => {
       });
     }
 
+    // Validar TMDB ID si se proporciona
+    let validTmdbId = tmdb_id;
+    if (tmdb_id) {
+      console.log(`🔍 Validando TMDB ID ${tmdb_id} para ${item_type}...`);
+      const tmdbData = await validateTmdbId(item_type, tmdb_id);
+      if (!tmdbData) {
+        return res.status(400).json({
+          success: false,
+          msg: `El TMDB ID ${tmdb_id} no es válido para ${item_type}`
+        });
+      }
+      console.log(`✅ TMDB ID válido: ${tmdbData.title || tmdbData.name}`);
+    } else {
+      // Si no se proporciona tmdb_id, usar item_id como fallback
+      validTmdbId = item_id;
+    }
+
     // Insertar o actualizar
     const query = `
       INSERT INTO reviews (user_id, item_type, item_id, tmdb_id, rating, review_text, is_favorite)
@@ -48,7 +94,7 @@ exports.createOrUpdateReview = async (req, res) => {
       user_id,
       item_type,
       item_id,
-      tmdb_id || item_id,
+      validTmdbId,
       rating,
       review_text,
       is_favorite
