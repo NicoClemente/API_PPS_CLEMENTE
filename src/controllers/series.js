@@ -1,47 +1,53 @@
 const axios = require('axios');
 const { request, response } = require('express');
-const BASE_URL = process.env.TVMAZE_BASE_URL || 'https://api.tvmaze.com';
 
-// Obtener una lista general de series, con un límite de 50 registros
+// Configuración de TMDB (igual que en movies.js)
+const TMDB_BASE_URL = process.env.TMDB_BASE_URL || 'https://api.themoviedb.org/3';
+const TMDB_ACCESS_TOKEN = process.env.TMDB_ACCESS_TOKEN;
+
+const tmdbAxios = axios.create({
+  baseURL: TMDB_BASE_URL,
+  headers: {
+    Authorization: `Bearer ${TMDB_ACCESS_TOKEN}`,
+    accept: 'application/json'
+  }
+});
+
+// Obtener una lista general de series populares
 const getSeries = async (req = request, res = response) => {
   try {
     const { page = 1 } = req.query;
 
-    // Llamada al endpoint de TVMaze para obtener todas las series
-    const response = await axios.get(`${BASE_URL}/shows?page=${page - 1}`); // TVMaze utiliza un índice basado en 0 para las páginas
-    const showsData = response.data;
+    // Llamada al endpoint de TMDB para obtener series populares
+    const response = await tmdbAxios.get('/tv/popular', {
+      params: {
+        page: page,
+        language: 'es-ES'
+      }
+    });
 
-    // Si no hay resultados, devolvemos un mensaje adecuado
-    if (showsData.length === 0) {
-      return res.status(404).json({
-        status: 'error',
-        msg: 'No se encontraron series en esta página.'
-      });
-    }
-
-    // Limitar a 50 series por página
-    const startIndex = (page - 1) * 50;
-    const limitedShows = showsData.slice(startIndex, startIndex + 50);
-
-    const series = limitedShows.map((show) => ({
+    const series = response.data.results.map((show) => ({
       id: show.id,
       name: show.name,
-      genres: show.genres,
-      premiered: show.premiered,
-      status: show.status,
-      summary: show.summary,
-      network: show.network ? show.network.name : 'Unknown',
-      imageUrl: show.image ? show.image.medium : 'https://via.placeholder.com/210x295' // URL de la imagen
+      genres: show.genre_ids, // TMDB devuelve IDs de géneros, no nombres
+      first_air_date: show.first_air_date,
+      overview: show.overview,
+      poster_path: show.poster_path,
+      vote_average: show.vote_average,
+      imageUrl: show.poster_path
+        ? `https://image.tmdb.org/t/p/w500${show.poster_path}`
+        : 'https://via.placeholder.com/210x295'
     }));
 
     res.status(200).json({
       status: 'ok',
       data: series,
-      total: showsData.length, // Total de series devueltas
-      page // Página actual
+      total_pages: response.data.total_pages,
+      total_results: response.data.total_results,
+      page: parseInt(page)
     });
   } catch (error) {
-    console.error('Error al obtener las series: ', error);
+    console.error('Error al obtener las series:', error);
     res.status(500).json({
       status: 'error',
       msg: 'Error inesperado al obtener la lista de series. Por favor, inténtalo de nuevo más tarde.'
@@ -54,23 +60,30 @@ const getSeriePorId = async (req = request, res = response) => {
   const { id } = req.params;
 
   try {
-    const response = await axios.get(`${BASE_URL}/shows/${id}`);
-    const { id: showId, name, genres, premiered, status, summary, network, image } = response.data;
+    const response = await tmdbAxios.get(`/tv/${id}`, {
+      params: { language: 'es-ES' }
+    });
+
+    const show = response.data;
 
     res.status(200).json({
       status: 'ok',
       data: {
-        id: showId,
-        name,
-        genres,
-        premiered,
-        status,
-        summary,
-        network: network ? network.name : 'Unknown',
-        imageUrl: image ? image.medium : 'https://via.placeholder.com/210x295' // URL de la imagen
+        id: show.id,
+        name: show.name,
+        genres: show.genres.map(g => g.name), // TMDB devuelve objetos de género
+        first_air_date: show.first_air_date,
+        overview: show.overview,
+        status: show.status,
+        vote_average: show.vote_average,
+        poster_path: show.poster_path,
+        imageUrl: show.poster_path
+          ? `https://image.tmdb.org/t/p/w500${show.poster_path}`
+          : 'https://via.placeholder.com/210x295'
       }
     });
   } catch (error) {
+    console.error('Error al obtener la serie:', error);
     res.status(404).json({
       status: 'error',
       msg: 'Serie no encontrada'
@@ -90,29 +103,45 @@ const getSeriesPorGenero = async (req = request, res = response) => {
   }
 
   try {
-    // Hacemos la búsqueda en la API de TVMaze
-    const response = await axios.get(`${BASE_URL}/shows`); // Obtiene todas las series
-    const showsData = response.data;
+    // Primero obtener la lista de géneros para mapear el nombre al ID
+    const genresResponse = await tmdbAxios.get('/genre/tv/list', {
+      params: { language: 'es-ES' }
+    });
 
-    // Filtramos por género (asegurando que la comparación sea insensible a mayúsculas/minúsculas)
-    const filteredSeries = showsData.filter((show) =>
-      show.genres.map(g => g.toLowerCase()).includes(genre.toLowerCase())
+    const genreObj = genresResponse.data.genres.find(g =>
+      g.name.toLowerCase() === genre.toLowerCase()
     );
 
-    // Limitar a 50 resultados por página
-    const startIndex = (page - 1) * 50;
-    const series = filteredSeries.slice(startIndex, startIndex + 50).map((show) => ({
+    if (!genreObj) {
+      return res.status(400).json({
+        status: 'error',
+        msg: `Género "${genre}" no encontrado`
+      });
+    }
+
+    // Buscar series con ese género
+    const response = await tmdbAxios.get('/discover/tv', {
+      params: {
+        with_genres: genreObj.id,
+        page: page,
+        language: 'es-ES',
+        sort_by: 'popularity.desc'
+      }
+    });
+
+    const series = response.data.results.map((show) => ({
       id: show.id,
       name: show.name,
-      genres: show.genres,
-      premiered: show.premiered,
-      status: show.status,
-      summary: show.summary,
-      network: show.network ? show.network.name : 'Unknown',
-      imageUrl: show.image ? show.image.medium : 'https://via.placeholder.com/210x295' // URL de la imagen
+      genres: show.genre_ids,
+      first_air_date: show.first_air_date,
+      overview: show.overview,
+      poster_path: show.poster_path,
+      vote_average: show.vote_average,
+      imageUrl: show.poster_path
+        ? `https://image.tmdb.org/t/p/w500${show.poster_path}`
+        : 'https://via.placeholder.com/210x295'
     }));
 
-    // Si no hay series encontradas
     if (series.length === 0) {
       return res.status(404).json({
         status: 'error',
@@ -120,13 +149,15 @@ const getSeriesPorGenero = async (req = request, res = response) => {
       });
     }
 
-    // Envío de las series filtradas
     res.status(200).json({
       status: 'ok',
-      data: series
+      data: series,
+      total_pages: response.data.total_pages,
+      total_results: response.data.total_results,
+      page: parseInt(page)
     });
   } catch (error) {
-    console.error(error); // Log para depuración
+    console.error('Error al obtener las series por género:', error);
     res.status(500).json({
       status: 'error',
       msg: 'Error inesperado al obtener las series por género'
@@ -136,42 +167,56 @@ const getSeriesPorGenero = async (req = request, res = response) => {
 
 // Buscar series por nombre
 const searchSeries = async (req = request, res = response) => {
-  const { query } = req.query;
+  const { query = '', page = 1 } = req.query;
 
   if (!query) {
     return res.status(400).json({
       status: 'error',
-      msg: 'Debes proporcionar un nombre para buscar las series'
+      msg: 'Debes proporcionar un término de búsqueda'
     });
   }
 
   try {
-    const response = await axios.get(`${BASE_URL}/search/shows?q=${query}`);
-    const showsData = response.data;
-
-    const series = showsData.map((result) => {
-      const show = result.show;
-      return {
-        id: show.id,
-        name: show.name,
-        genres: show.genres,
-        premiered: show.premiered,
-        status: show.status,
-        summary: show.summary,
-        network: show.network ? show.network.name : 'Unknown',
-        imageUrl: show.image ? show.image.medium : 'https://via.placeholder.com/210x295' // URL de la imagen
-      };
+    const response = await tmdbAxios.get('/search/tv', {
+      params: {
+        query: query,
+        page: page,
+        language: 'es-ES'
+      }
     });
+
+    const series = response.data.results.map((show) => ({
+      id: show.id,
+      name: show.name,
+      genres: show.genre_ids,
+      first_air_date: show.first_air_date,
+      overview: show.overview,
+      poster_path: show.poster_path,
+      vote_average: show.vote_average,
+      imageUrl: show.poster_path
+        ? `https://image.tmdb.org/t/p/w500${show.poster_path}`
+        : 'https://via.placeholder.com/210x295'
+    }));
+
+    if (series.length === 0) {
+      return res.status(404).json({
+        status: 'error',
+        msg: `No se encontraron series para la búsqueda "${query}"`
+      });
+    }
 
     res.status(200).json({
       status: 'ok',
-      data: series
+      data: series,
+      total_pages: response.data.total_pages,
+      total_results: response.data.total_results,
+      page: parseInt(page)
     });
   } catch (error) {
-    console.error('Error al buscar las series: ', error);
+    console.error('Error al buscar series:', error);
     res.status(500).json({
       status: 'error',
-      msg: 'Error inesperado al buscar las series. Por favor, inténtalo de nuevo más tarde.'
+      msg: 'Error inesperado al buscar series'
     });
   }
 };
