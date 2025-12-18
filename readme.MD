@@ -4,20 +4,22 @@
 **Universidad Tecnológica Nacional - FRBB**  
 **Materia:** Laboratorio IV  
 **Profesor:** Sebastián Gañan  
-**Grupo 3:** Racciatti Carla, Mattei Stefano, Clemente Nicolás
+**Alumno**: Nicolás Clemente
 
 ---
 
 ## 📋 Descripción
 
-API REST desarrollada con Node.js y Express que gestiona películas, series, actores y usuarios. El sistema implementa:
+API REST desarrollada con Node.js y Express que gestiona películas, series, actores, usuarios, favoritos y reseñas. El sistema implementa:
 
-- ✅ Base de datos SQLite3 para persistencia
-- ✅ Operaciones CRUD completas
-- ✅ Protección con API_KEY en todas las rutas
-- ✅ Integración con APIs externas (TMDb, TVMaze, OpenLibrary)
-- ✅ Sistema de favoritos
-- ✅ Gestión de usuarios
+- ✅ Base de datos PostgreSQL en Neon (nube) para persistencia
+- ✅ Operaciones CRUD completas para usuarios, favoritos y reseñas
+- ✅ Protección con API_KEY en todas las rutas `/api`
+- ✅ Autenticación JWT para usuarios registrados
+- ✅ Integración con APIs externas (TMDb para películas, series y actores)
+- ✅ Sistema de favoritos y reseñas
+- ✅ Gestión completa de usuarios con hashing de contraseñas (bcrypt)
+- ✅ CORS habilitado para frontend (Flutter Web)
 
 ---
 
@@ -26,13 +28,14 @@ API REST desarrollada con Node.js y Express que gestiona películas, series, act
 ### Requisitos previos
 - Node.js v16 o superior
 - npm o yarn
+- Cuenta en [Neon](https://neon.tech) para base de datos PostgreSQL
 
 ### Pasos de instalación
 
 1. **Clonar el repositorio**
 ```bash
-git clone [URL_DEL_REPO]
-cd backend
+git clone [URL_DEL_REPO_BACKEND]
+cd API_PPS_CLEMENTE
 ```
 
 2. **Instalar dependencias**
@@ -40,19 +43,32 @@ cd backend
 npm install
 ```
 
-3. **Configurar variables de entorno**
+3. **Configurar base de datos en Neon**
+   - Crear una cuenta en Neon
+   - Crear un nuevo proyecto de base de datos
+   - Copiar la `DATABASE_URL` proporcionada
+
+4. **Configurar variables de entorno**
 ```bash
-cp .env.example .env
+cp sample.env .env
 ```
 
 Editar el archivo `.env` con tus credenciales:
 ```env
 PORT=3000
-API_KEY=flixfinder_api_key_2024_grupo3_pps
-TMDB_ACCESS_TOKEN=tu_token_aqui
+DATABASE_URL=postgresql://tu_usuario:tu_password@tu_host/tu_base_datos?sslmode=require
+API_KEY=tu_api_key_segura_aqui
+JWT_SECRET=tu_jwt_secret_muy_seguro_aqui
+TMDB_ACCESS_TOKEN=tu_token_de_tmdb_aqui
 ```
 
-4. **Iniciar el servidor**
+5. **Crear las tablas en la base de datos**
+```bash
+# Ejecutar el schema en Neon (usando pgAdmin, DBeaver o psql)
+# Archivo: database/schema_postgresql.sql
+```
+
+6. **Iniciar el servidor**
 ```bash
 # Modo desarrollo
 npm run dev
@@ -67,39 +83,114 @@ La API estará disponible en `http://localhost:3000`
 
 ## 🔐 Autenticación
 
-**TODAS** las rutas `/api` requieren autenticación mediante API_KEY.
+### API_KEY (Obligatoria para todas las rutas `/api`)
+**TODAS** las rutas protegidas requieren autenticación mediante API_KEY.
 
-### Métodos de envío:
+**Métodos de envío:**
 
 **Opción 1: Header (Recomendado)**
 ```bash
-curl -H "X-API-KEY: flixfinder_api_key_2024_grupo3_pps" http://localhost:3000/api/v1/peliculas
+curl -H "X-API-KEY: {{api_key}}" http://localhost:3000/api/v1/peliculas
 ```
 
 **Opción 2: Query Parameter**
 ```bash
-curl http://localhost:3000/api/v1/peliculas?api_key=flixfinder_api_key_2024_grupo3_pps
+curl "http://localhost:3000/api/v1/peliculas?api_key={{api_key}}"
+```
+
+### JWT (Para usuarios registrados)
+Algunas rutas requieren autenticación de usuario además de API_KEY.
+
+**Obtener JWT:**
+```bash
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"demo@flixfinder.com","password":"demo123"}'
+```
+
+**Usar JWT:**
+```bash
+curl -H "X-API-KEY: {{api_key}}" \
+     -H "Authorization: Bearer TU_JWT_TOKEN" \
+     http://localhost:3000/api/v1/favorites
 ```
 
 ---
 
 ## 📚 Endpoints
 
-### 🎬 Películas
+### 🔓 Rutas Públicas
+
+#### Información de la API
+```http
+GET /
+```
+
+#### Health Check
+```http
+GET /health
+```
+
+### 🔐 Autenticación (sin API_KEY)
+
+#### Registrar usuario
+```http
+POST /auth/register
+Content-Type: application/json
+
+{
+  "nombre": "Juan",
+  "apellido": "Pérez",
+  "email": "juan@email.com",
+  "password": "password123",
+  "telefono": "1234567890"
+}
+```
+
+#### Iniciar sesión
+```http
+POST /auth/login
+Content-Type: application/json
+
+{
+  "email": "juan@email.com",
+  "password": "password123"
+}
+```
+
+#### Obtener perfil (requiere JWT)
+```http
+GET /auth/profile
+Authorization: Bearer <token>
+```
+
+#### Actualizar perfil (requiere JWT)
+```http
+PUT /auth/profile
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "nombre": "Juan Carlos",
+  "telefono": "9876543210"
+}
+```
+
+### 🎬 Películas (requiere API_KEY)
 
 #### Obtener películas populares (TMDb)
 ```http
 GET /api/v1/peliculas
 ```
 
-#### Buscar película por título
+#### Buscar películas por título
 ```http
 GET /api/v1/peliculas/buscar?query=matrix
 ```
 
 #### Filtrar por género
 ```http
-GET /api/v1/peliculas/generos?genre=accion
+GET /api/v1/peliculas/generos?genre=28
 ```
 
 #### Obtener lista de géneros
@@ -112,77 +203,29 @@ GET /api/v1/peliculas/generos
 GET /api/v1/peliculas/:id
 ```
 
-#### **CRUD - Base de Datos Local**
+### 📺 Series (requiere API_KEY)
 
-##### Crear película
-```http
-POST /api/v1/peliculas/db
-Content-Type: application/json
-
-{
-  "tmdb_id": "550",
-  "title": "El club de la lucha",
-  "overview": "Un empleado de oficina...",
-  "release_date": "1999-10-15",
-  "vote_average": 8.4,
-  "poster_path": "/path/to/poster.jpg",
-  "genre_ids": [18, 53]
-}
-```
-
-##### Obtener películas guardadas
-```http
-GET /api/v1/peliculas/db?page=1&limit=20
-```
-
-##### Obtener película por ID local
-```http
-GET /api/v1/peliculas/db/:id
-```
-
-##### Actualizar película
-```http
-PUT /api/v1/peliculas/db/:id
-Content-Type: application/json
-
-{
-  "title": "Fight Club",
-  "vote_average": 8.5
-}
-```
-
-##### Eliminar película
-```http
-DELETE /api/v1/peliculas/db/:id
-```
-
----
-
-### 📺 Series
-
-#### Obtener series (TVMaze)
+#### Obtener series populares (TMDb)
 ```http
 GET /api/v1/series?page=1
 ```
 
-#### Buscar series
+#### Buscar series por nombre
 ```http
 GET /api/v1/series/buscar?query=breaking+bad
 ```
 
 #### Filtrar por género
 ```http
-GET /api/v1/series/genero?genre=drama
+GET /api/v1/series/genero?genre=18
 ```
 
-#### Obtener serie por ID de TVMaze
+#### Obtener serie por ID de TMDb
 ```http
 GET /api/v1/series/:id
 ```
 
----
-
-### 👤 Actores
+### 👤 Actores (requiere API_KEY)
 
 #### Obtener actores populares (TMDb)
 ```http
@@ -199,9 +242,7 @@ GET /api/v1/actores/name?nombre=DiCaprio
 GET /api/v1/actores/:id
 ```
 
----
-
-### 👥 Usuarios
+### 👥 Usuarios (requiere API_KEY)
 
 #### Crear usuario
 ```http
@@ -212,11 +253,12 @@ Content-Type: application/json
   "nombre": "Juan",
   "apellido": "Pérez",
   "email": "juan@email.com",
+  "password": "password123",
   "telefono": "1234567890"
 }
 ```
 
-#### Obtener todos los usuarios
+#### Obtener todos los usuarios (paginado)
 ```http
 GET /api/v1/users?page=1&limit=20
 ```
@@ -242,68 +284,108 @@ Content-Type: application/json
 DELETE /api/v1/users/:id
 ```
 
----
-
-### ⭐ Favoritos
+### ⭐ Favoritos (requiere API_KEY + JWT)
 
 #### Agregar a favoritos
 ```http
 POST /api/v1/favorites
+Authorization: Bearer <token>
 Content-Type: application/json
 
 {
-  "user_id": 1,
   "item_type": "movie",
-  "item_id": 5
+  "item_id": "550"
 }
 ```
 **item_type:** `movie`, `series` o `actor`
 
-#### Obtener favoritos de un usuario
+#### Obtener favoritos del usuario autenticado
 ```http
-GET /api/v1/favorites/user/:user_id
+GET /api/v1/favorites
+Authorization: Bearer <token>
 ```
 
 #### Obtener favoritos con detalles
 ```http
-GET /api/v1/favorites/user/:user_id/detailed
+GET /api/v1/favorites/detailed
+Authorization: Bearer <token>
 ```
 
 #### Filtrar favoritos por tipo
 ```http
-GET /api/v1/favorites/user/:user_id?type=movie
+GET /api/v1/favorites?type=movie
+Authorization: Bearer <token>
 ```
 
 #### Eliminar favorito por ID
 ```http
 DELETE /api/v1/favorites/:id
+Authorization: Bearer <token>
 ```
 
-#### Eliminar favorito específico
+### 📝 Reseñas (requiere API_KEY + JWT)
+
+#### Crear reseña
 ```http
-DELETE /api/v1/favorites/remove
+POST /api/v1/reviews
+Authorization: Bearer <token>
 Content-Type: application/json
 
 {
-  "user_id": 1,
   "item_type": "movie",
-  "item_id": 5
+  "item_id": "550",
+  "rating": 9,
+  "review_text": "Excelente película",
+  "is_favorite": true
 }
+```
+
+#### Obtener reseñas del usuario
+```http
+GET /api/v1/reviews
+Authorization: Bearer <token>
+```
+
+#### Obtener reseñas con detalles
+```http
+GET /api/v1/reviews/detailed
+Authorization: Bearer <token>
+```
+
+#### Actualizar reseña
+```http
+PUT /api/v1/reviews/:id
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "rating": 10,
+  "review_text": "Obra maestra"
+}
+```
+
+#### Eliminar reseña
+```http
+DELETE /api/v1/reviews/:id
+Authorization: Bearer <token>
 ```
 
 ---
 
 ## 🗄️ Base de Datos
 
-### Estructura
+### PostgreSQL en Neon
 
-La base de datos SQLite3 incluye las siguientes tablas:
+La aplicación utiliza PostgreSQL alojado en Neon (https://neon.tech), un servicio de base de datos en la nube.
 
-- **users** - Usuarios de la aplicación
-- **movies** - Películas guardadas
-- **series** - Series guardadas
-- **actors** - Actores guardados
+### Estructura de Tablas
+
+- **users** - Usuarios registrados con contraseñas hasheadas
+- **movies** - Cache de películas de TMDb
+- **series** - Cache de series de TMDb
+- **actors** - Cache de actores de TMDb
 - **favorites** - Favoritos de usuarios (relación polimórfica)
+- **reviews** - Reseñas y calificaciones de usuarios
 
 ### Diagrama ER
 
@@ -311,45 +393,55 @@ Ver archivo `docs/DIAGRAMA_ER.md` para el diagrama completo.
 
 ### Schema SQL
 
-El schema se encuentra en `database/schema.sql` y se carga automáticamente al iniciar la aplicación.
+El schema se encuentra en `database/schema_postgresql.sql`. Ejecutarlo en Neon para crear las tablas.
+
+**Usuario de prueba incluido:**
+- Email: `demo@flixfinder.com`
+- Password: `demo123`
 
 ---
 
 ## 📁 Estructura del Proyecto
 
 ```
-backend/
+API_PPS_CLEMENTE/
 ├── src/
 │   ├── config/
-│   │   └── database.js          # Configuración SQLite
+│   │   └── database.js          # Configuración PostgreSQL (Neon)
 │   ├── controllers/
-│   │   ├── movies_crud.js       # CRUD películas
-│   │   ├── series.js            # Series
-│   │   ├── actors.js            # Actores
-│   │   ├── users.js             # Usuarios
-│   │   └── favorites.js         # Favoritos
-│   ├── middlewares/
-│   │   └── auth.js              # Middleware API_KEY
+│   │   ├── actors.js            # Controladores de actores
+│   │   ├── authController.js    # Autenticación JWT
+│   │   ├── books.js             # Libros (OpenLibrary)
+│   │   ├── favoritesController.js # Favoritos
+│   │   ├── movies.js            # Películas (TMDb)
+│   │   ├── reviewsController.js # Reseñas
+│   │   ├── series.js            # Series (TMDb)
+│   │   └── users.js             # Usuarios
+│   ├── middleware/
+│   │   └── auth.js              # Middleware API_KEY y JWT
 │   ├── models/
-│   │   └── server.js            # Clase Server
+│   │   └── server.js            # Clase Server principal
 │   └── routes/
-│       ├── movies.js
-│       ├── series.js
 │       ├── actors.js
-│       ├── users.js
-│       └── favorites.js
+│       ├── authRoutes.js        # Rutas de autenticación
+│       ├── books.js
+│       ├── favorites.js
+│       ├── movies.js
+│       ├── reviews.js
+│       ├── series.js
+│       └── users.js
 ├── database/
-│   ├── schema.sql               # Schema de la BD
-│   └── flixfinder.db            # Base de datos (se crea automáticamente)
+│   └── schema_postgresql.sql    # Schema de PostgreSQL
 ├── docs/
 │   └── DIAGRAMA_ER.md           # Diagrama Entidad-Relación
 ├── public/
-│   └── index.html
-├── .env.example                 # Ejemplo de variables de entorno
+│   └── index.html               # Página de bienvenida
+├── .env                         # Variables de entorno (no commitear)
+├── sample.env                   # Ejemplo de .env
 ├── .gitignore
 ├── app.js                       # Punto de entrada
 ├── package.json
-└── README.md
+├── readme.MD                    # Este archivo
 ```
 
 ---
@@ -359,14 +451,78 @@ backend/
 ### Importar Colección
 
 1. Abrir Postman
-2. Importar la colección desde `postman/FlixFinder_API.postman_collection.json`
-3. Configurar la variable de entorno `API_KEY`
+2. Crear una nueva colección llamada "FlixFinder API"
+3. Configurar las variables de entorno
 
-### Variables de Entorno
+### Variables de Entorno en Postman
 
-Crear un entorno en Postman con:
+Crear un entorno con:
 - `base_url`: `http://localhost:3000`
-- `api_key`: `flixfinder_api_key_2024_grupo3_pps`
+- `api_key`: `tu_api_key_segura_aqui`
+- `jwt_token`: (obtenerlo del login)
+
+### Ejemplos de Requests
+
+#### Login y obtener JWT
+```http
+POST {{base_url}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "demo@flixfinder.com",
+  "password": "demo123"
+}
+```
+
+#### Obtener películas con API_KEY
+```http
+GET {{base_url}}/api/v1/peliculas
+X-API-KEY: {{api_key}}
+```
+
+#### Agregar favorito (requiere JWT)
+```http
+POST {{base_url}}/api/v1/favorites
+X-API-KEY: {{api_key}}
+Authorization: Bearer {{jwt_token}}
+Content-Type: application/json
+
+{
+  "item_type": "movie",
+  "item_id": "550"
+}
+```
+
+---
+
+## 🚀 Despliegue
+
+### Opciones de Despliegue
+
+La API puede desplegarse en plataformas como:
+- **Render** (recomendado para APIs)
+- **Vercel**
+- **Heroku**
+- **Railway**
+
+### Variables de Entorno en Producción
+
+Asegurarse de configurar en la plataforma:
+- `DATABASE_URL` (de Neon)
+- `API_KEY` (generar una nueva segura)
+- `JWT_SECRET` (generar uno seguro)
+- `TMDB_ACCESS_TOKEN`
+- `NODE_ENV=production`
+
+### Comandos para Despliegue
+
+```bash
+# Instalar dependencias
+npm install --production
+
+# Iniciar en producción
+npm start
+```
 
 ---
 
@@ -374,41 +530,45 @@ Crear un entorno en Postman con:
 
 - **Node.js** - Runtime de JavaScript
 - **Express** - Framework web
-- **SQLite3** - Base de datos
-- **Axios** - Cliente HTTP
-- **CORS** - Control de acceso
+- **PostgreSQL** - Base de datos relacional
+- **Neon** - Servicio de BD en la nube
+- **pg** - Cliente PostgreSQL para Node.js
+- **bcryptjs** - Hashing de contraseñas
+- **jsonwebtoken** - Autenticación JWT
+- **axios** - Cliente HTTP para APIs externas
+- **cors** - Control de acceso CORS
 - **dotenv** - Variables de entorno
 
 ---
 
 ## 📝 Notas Importantes
 
-### Sobre la API_KEY
+### Seguridad
+- **API_KEY**: Protege todas las rutas `/api`. Cambiar en producción.
+- **JWT**: Para autenticación de usuarios. Expira en 24 horas.
+- **Contraseñas**: Hasheadas con bcrypt (10 rounds).
+- **CORS**: Configurado para Flutter Web.
 
-- La API_KEY protege **TODAS** las rutas `/api`
-- En producción, cambiar por una clave más segura
-- Nunca commitear el archivo `.env` al repositorio
+### Base de Datos
+- **Neon**: PostgreSQL serverless. Gratuito hasta ciertos límites.
+- **Pool de conexiones**: Máximo 20 conexiones.
+- **Triggers**: Actualizan `updated_at` automáticamente.
+- **Índices**: Optimizados para búsquedas.
 
-### Sobre la Base de Datos
+### APIs Externas
+- **TMDb**: Requiere Access Token (gratuito).
+- **Rate limiting**: Respetar límites de TMDb.
 
-- La base de datos se crea automáticamente en el primer inicio
-- El archivo `flixfinder.db` se encuentra en `/database`
-- Para resetear la BD, simplemente eliminar el archivo `.db`
-
-### Sobre las APIs Externas
-
-- **TMDb** requiere Access Token en `.env`
-- **TVMaze** no requiere autenticación
-- **OpenLibrary** no requiere autenticación
+### Errores Comunes
+- **DATABASE_URL**: Verificar SSL mode.
+- **API_KEY**: Incluir en headers o query.
+- **JWT**: Verificar expiración.
 
 ---
 
-## 👥 Equipo de Desarrollo
+## 👥 Desarrollador
 
-- **Carla Racciatti** - Actores y Libros
-- **Stefano Mattei** - Series
-- **Nicolás Clemente** - Películas
-
+- **Nicolás Clemente** - 
 ---
 
 ## 📄 Licencia
@@ -419,4 +579,4 @@ Proyecto académico - UTN FRBB 2024
 
 ## 📞 Soporte
 
-Para consultas sobre el proyecto, contactar al profesor Sebastián Gañan.
+Para consultas sobre el proyecto, contactar al profesor Sebastián Gañan o al equipo de desarrollo.
